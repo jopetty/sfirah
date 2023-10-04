@@ -8,9 +8,12 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 torch = "^2.0"
+numpy = ">=1.25"
+tqdm = "^4.66"
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^3.4"
+python-dotenv = "^1.0"
 
 [build-system]
 requires = ["poetry-core"]
