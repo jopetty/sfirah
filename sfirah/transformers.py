@@ -38,8 +38,8 @@ class Transformer(nn.Module):
         return self._weight_sharing
 
     @property
-    def num_layers(self) -> int:
-        return self._num_layers
+    def n_layers(self) -> int:
+        return self._n_layers
 
     @property
     def num_parameters(self) -> int:
@@ -48,11 +48,11 @@ class Transformer(nn.Module):
     def __init__(
         self,
         d_model: int,
-        nhead: int,
-        dim_feedforward: int,
+        n_heads: int,
+        d_ff: int,
         dropout: float,
         activation: str,
-        num_layers: int,
+        n_layers: int,
         norm_first: bool,
         layer_norm_eps: float,
         batch_first: bool,
@@ -64,7 +64,7 @@ class Transformer(nn.Module):
         super().__init__()
 
         self._weight_sharing = weight_sharing
-        self._num_layers = num_layers
+        self._n_layers = n_layers
 
         self.embedding = nn.Sequential(
             nn.Embedding(n_vocab, d_model),
@@ -73,8 +73,8 @@ class Transformer(nn.Module):
 
         layer = nn.TransformerEncoderLayer(
             d_model=d_model,
-            nhead=nhead,
-            dim_feedforward=dim_feedforward,
+            nhead=n_heads,
+            dim_feedforward=d_ff,
             dropout=dropout,
             activation=Transformer.get_activation_function(activation),
             layer_norm_eps=layer_norm_eps,
@@ -83,10 +83,10 @@ class Transformer(nn.Module):
             bias=bias,
         )
 
-        self.transformer = nn.TransformerEncoder(layer, num_layers=num_layers)
+        self.transformer = nn.TransformerEncoder(layer, num_layers=n_layers)
 
         if self.weight_sharing:
-            self.transformer.layers = nn.ModuleList([layer] * num_layers)
+            self.transformer.layers = nn.ModuleList([layer] * n_layers)
 
         for _, p in self.named_parameters():
             p = p * weight_scale
@@ -188,12 +188,12 @@ class EncoderClassifier(Transformer):
 
 class CausalDecoder(Transformer):
     @property
-    def window_size(self) -> int:
-        return self._window_size
+    def context_size(self) -> int:
+        return self._context_size
 
-    def __init__(self, window_size: int, **kwargs):
+    def __init__(self, context_size: int, **kwargs):
         super().__init__(**kwargs)
-        self._window_size = window_size
+        self._context_size = context_size
         self.lm_head = nn.Linear(
             kwargs["d_model"],
             kwargs["n_vocab"],
@@ -237,8 +237,8 @@ class CausalDecoder(Transformer):
         assert max_new_tokens > 0, "Context is longer than max_length"
 
         for _ in range(max_new_tokens):
-            if seq_len > self.window_size:
-                context = context[:, -self.window_size :]
+            if seq_len > self.context_size:
+                context = context[:, -self.context_size :]
 
             logits = self.forward(context)
             logits = logits[:, -1, :] / temperature
