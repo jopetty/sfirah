@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "sfirah"
+version = "0.1.0"
+description = ""
+authors = ["Jackson Petty <research@jacksonpetty.org>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+torch = "^2.0"
+
+[tool.poetry.dev-dependencies]
+pre-commit = "^3.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+select = ["E", "F", "I", "N"]
+line-length = 88
+target-version = "py310"
