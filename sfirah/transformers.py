@@ -5,6 +5,7 @@ from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
 
 from .layers import IndexPool
+from .utils import get_activation
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -33,6 +34,7 @@ class SinusoidalPositionalEncoding(nn.Module):
 
 
 class Transformer(nn.Module):
+
     @property
     def weight_sharing(self) -> bool:
         return self._weight_sharing
@@ -76,7 +78,7 @@ class Transformer(nn.Module):
             nhead=n_heads,
             dim_feedforward=d_ff,
             dropout=dropout,
-            activation=Transformer.get_activation_function(activation),
+            activation=get_activation(activation, functional=True),
             layer_norm_eps=layer_norm_eps,
             batch_first=batch_first,
             norm_first=norm_first,
@@ -106,51 +108,6 @@ class Transformer(nn.Module):
             is_causal=is_causal,
         )
         return x
-
-    @staticmethod
-    def get_activation_function(activation: str) -> callable:
-        activation_funcs = {
-            "celu": F.celu,
-            "elu": F.elu,
-            "gelu": F.gelu,
-            "glu": F.glu,
-            "hardshrink": F.hardshrink,
-            "hardsigmoid": F.hardsigmoid,
-            "hardswish": F.hardsigmoid,
-            "hardtanh": F.hardtanh,
-            "leaky_relu": F.leaky_relu,
-            "logsigmoid": F.logsigmoid,
-            "log_softmax": F.log_softmax,
-            "mish": F.mish,
-            "prelu": F.prelu,
-            "relu": F.relu,
-            "relu6": F.relu6,
-            "rrelu": F.rrelu,
-            "selu": F.selu,
-            "sigmoid": F.sigmoid,
-            "silu": F.silu,
-            "softmax": F.softmax,
-            "softmin": F.softmin,
-            "softplus": F.softplus,
-            "softshrink": F.softshrink,
-            "softsign": F.softsign,
-            "tanh": F.tanh,
-            "tanhshrink": F.tanhshrink,
-        }
-
-        if activation not in activation_funcs:
-            raise ValueError(
-                f"Unknown activation `{activation}`. Must be one of: "
-                f"{list(activation_funcs.keys())}"
-            )
-
-        if activation not in ["relu", "gelu"]:
-            logger.warning(
-                f"PyTorch does not optimize for using `{activation}`; "
-                "Consider using `relu` or `gelu` instead."
-            )
-
-        return activation_funcs[activation]
 
 
 class EncoderClassifier(Transformer):
