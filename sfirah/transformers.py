@@ -35,12 +35,56 @@ class SinusoidalPositionalEncoding(nn.Module):
 
 class Transformer(nn.Module):
     @property
-    def weight_sharing(self) -> bool:
-        return self._weight_sharing
+    def d_model(self) -> int:
+        return self._d_model
+
+    @property
+    def n_heads(self) -> int:
+        return self._n_heads
+
+    @property
+    def d_ff(self) -> int:
+        return self._d_ff
+
+    @property
+    def dropout(self) -> float:
+        return self._dropout
+
+    @property
+    def activation(self) -> str:
+        return self._activation
 
     @property
     def n_layers(self) -> int:
         return self._n_layers
+
+    @property
+    def norm_first(self) -> bool:
+        return self._norm_first
+
+    @property
+    def layer_norm_eps(self) -> float:
+        return self._layer_norm_eps
+
+    @property
+    def batch_first(self) -> bool:
+        return self._batch_first
+
+    @property
+    def weight_sharing(self) -> bool:
+        return self._weight_sharing
+
+    @property
+    def n_vocab(self) -> int:
+        return self._n_vocab
+
+    @property
+    def weight_scale(self) -> int:
+        return self._weight_scale
+
+    @property
+    def bias(self) -> bool:
+        return self._bias
 
     @property
     def num_parameters(self) -> int:
@@ -116,14 +160,14 @@ class EncoderClassifier(Transformer):
         self.cl_head = nn.Sequential(
             IndexPool(dim=cl_dim, index=cl_index),
             nn.Linear(
-                kwargs["d_model"],
-                kwargs["n_classes"],
-                bias=kwargs["bias"],
+                self.d_model,
+                self.n_vocab,
+                self.bias,
             ),
         )
 
         for _, p in self.cl_head.named_parameters():
-            p = p * kwargs["weight_scale"]
+            p = p * self.weight_scale
 
     def forward(
         self,
@@ -151,9 +195,9 @@ class CausalDecoder(Transformer):
         super().__init__(**kwargs)
         self._context_size = context_size
         self.lm_head = nn.Linear(
-            kwargs["d_model"],
-            kwargs["n_vocab"],
-            bias=kwargs["bias"],
+            self.d_model,
+            self.n_vocab,
+            bias=self.bias,
         )
 
         for _, p in self.lm_head.named_parameters():
