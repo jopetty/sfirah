@@ -122,7 +122,7 @@ class MLP(nn.Module):
         return x
 
 
-class MLPClassifier(MLP):
+class MLPSequenceClassifier(MLP):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
