@@ -10,6 +10,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 def _get_funcational_activation(activation: str) -> callable:
     activation_funcs = {
         "celu": F.celu,
@@ -53,6 +54,7 @@ def _get_funcational_activation(activation: str) -> callable:
         )
 
     return activation_funcs[activation]
+
 
 def _get_module_activation(activation: str) -> nn.Module:
     activation_mods = {

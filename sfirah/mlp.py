@@ -1,8 +1,7 @@
-from copy import deepcopy
 import logging
+from copy import deepcopy
 
 from torch import Tensor, nn
-from torch.nn import functional as F  # noqa: N812
 
 from .utils import get_activation
 
@@ -15,15 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 class MLP(nn.Module):
-
     @property
     def d_model(self) -> int:
         return self._d_model
-    
+
     @property
     def n_layers(self) -> int:
         return self._n_layers
-    
+
     @property
     def num_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
@@ -31,42 +29,34 @@ class MLP(nn.Module):
     @property
     def d_ff(self) -> int:
         return self._d_ff
-    
+
     @property
     def dropout(self) -> float:
         return self._dropout
-    
+
     @property
     def activation(self) -> str:
         return self._activation
-    
+
     @property
     def n_vocab(self) -> int:
         return self._n_vocab
-    
+
     @property
     def bias(self) -> bool:
         return self._bias
-    
+
     @property
     def seq_len(self) -> int:
         return self._seq_len
-    
+
     @property
     def layer_norm_eps(self) -> float:
         return self._layer_norm_eps
-    
+
     @property
     def weight_scale(self) -> float:
         return self._weight_scale
-    
-    @property
-    def bias(self) -> bool:
-        return self._bias
-    
-    @property
-    def seq_len(self) -> int:
-        return self._seq_len
 
     @property
     def weight_sharing(self) -> bool:
@@ -116,12 +106,10 @@ class MLP(nn.Module):
         else:
             self.ff = nn.ModuleList([deepcopy(ff_layer) for _ in range(n_layers)])
 
-
         for _, p in self.named_parameters():
             p = p * weight_scale
-    
-    def forward(self, x: Tensor) -> Tensor:
 
+    def forward(self, x: Tensor) -> Tensor:
         if self.weight_sharing or len(self.ff) == 1:
             assert self.ff[0] == self.ff[-1], "Weights are not shared!"
         else:
@@ -130,12 +118,11 @@ class MLP(nn.Module):
         x = self.embedding(x)
         for ff in self.ff:
             x = ff(x)
-        
+
         return x
 
 
 class MLPClassifier(MLP):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -143,7 +130,7 @@ class MLPClassifier(MLP):
 
         for _, p in self.cl_head.named_parameters():
             p = p * self.weight_scale
-    
+
     def forward(self, x: Tensor) -> Tensor:
         x = super().forward(x)
         x = self.cl_head(x)

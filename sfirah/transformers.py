@@ -34,7 +34,6 @@ class SinusoidalPositionalEncoding(nn.Module):
 
 
 class Transformer(nn.Module):
-
     @property
     def weight_sharing(self) -> bool:
         return self._weight_sharing
