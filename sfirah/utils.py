@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
@@ -11,7 +12,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def _get_funcational_activation(activation: str) -> callable:
+def _get_funcational_activation(activation: str) -> Callable:
     activation_funcs = {
         "celu": F.celu,
         "elu": F.elu,
@@ -101,7 +102,7 @@ def _get_module_activation(activation: str) -> nn.Module:
     return activation_mods[activation]()
 
 
-def get_activation(activation: str, functional: bool = False) -> callable | nn.Module:
+def get_activation(activation: str, functional: bool = False) -> Callable | nn.Module:
     if functional:
         return _get_funcational_activation(activation)
     else:
