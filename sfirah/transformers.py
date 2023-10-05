@@ -138,11 +138,11 @@ class Transformer(nn.Module):
 
     def forward(
         self,
-        x: torch.Tensor,
+        x: Tensor,
         mask: Tensor | None = None,
         src_key_padding_mask: Tensor | None = None,
         is_causal: bool = False,
-    ) -> torch.Tensor:
+    ) -> Tensor:
         x = self.embedding(x)
         x = self.transformer(
             x,
@@ -153,7 +153,7 @@ class Transformer(nn.Module):
         return x
 
 
-class EncoderClassifier(Transformer):
+class EncoderSequenceClassifier(Transformer):
     def __init__(self, cl_dim: int, cl_index: int, **kwargs: dict):
         super().__init__(**kwargs)
 
@@ -183,6 +183,37 @@ class EncoderClassifier(Transformer):
             is_causal=is_causal,
         )
         x = self.cl_head(x)
+        return x
+
+
+class EncoderTokenClassifier(Transformer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.cl_head = nn.Linear(
+            self.d_model,
+            self.n_vocab,
+            self.bias,
+        )
+
+        for _, p in self.cl_head.named_parameters():
+            p = p * self.weight_scale
+
+    def forward(
+        self,
+        x: Tensor,
+        mask: Tensor | None = None,
+        src_key_padding_mask: Tensor | None = None,
+        is_causal: bool = False,
+    ) -> Tensor:
+        x = super().forward(
+            x, mask=mask, src_key_padding_mask=src_key_padding_mask, is_causal=is_causal
+        )
+        x = self.cl_head(x)
+
+        # logits are of shape (batch_size, seq_len, n_vocab), but
+        # F.cross_entropy expects (batch_size, n_vocab, seq_len)
+        x = x.transpose(-1, -2)
         return x
 
 
