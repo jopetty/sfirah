@@ -2,12 +2,14 @@ from torch import Tensor
 
 
 def token_accuracy(predictions: Tensor, targets: Tensor) -> float:
+    """Compute the per-token accuracy of a batch of predictions."""
     assert predictions.size() == targets.size()
 
     return (predictions == targets).float().mean().item()
 
 
 def sequence_accuracy(predictions: Tensor, targets: Tensor) -> float:
+    """Compute the per-sequence accuracy of a batch of predictions."""
     assert predictions.size() == targets.size()
     assert predictions.dim() == 2
 
