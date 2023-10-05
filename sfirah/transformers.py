@@ -108,8 +108,19 @@ class Transformer(nn.Module):
     ):
         super().__init__()
 
-        self._weight_sharing = weight_sharing
+        self._d_model = d_model
+        self._n_heads = n_heads
+        self._d_ff = d_ff
+        self._dropout = dropout
+        self._activation = activation
         self._n_layers = n_layers
+        self._norm_first = norm_first
+        self._layer_norm_eps = layer_norm_eps
+        self._batch_first = batch_first
+        self._weight_sharing = weight_sharing
+        self._n_vocab = n_vocab
+        self._weight_scale = weight_scale
+        self._bias = bias
 
         self.embedding = nn.Sequential(
             nn.Embedding(n_vocab, d_model),
