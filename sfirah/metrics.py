@@ -12,7 +12,7 @@ def ce_loss(predictions: Tensor, targets: Tensor) -> float:
         predictions (Tensor): The predictions.
         targets (Tensor): The targets.
     """
-    return F.cross_entropy(predictions.argmax(dim=1), targets).mean().item()
+    return F.cross_entropy(predictions, targets).mean().item()
 
 
 def token_accuracy(predictions: Tensor, targets: Tensor) -> float:
