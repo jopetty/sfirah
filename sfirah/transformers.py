@@ -405,19 +405,26 @@ class CausalDecoder(Transformer):
         max_new_tokens = max_length - seq_len
 
         assert max_new_tokens > 0, "Context is longer than max_length"
+        assert temperature >= 0, "Temperature must be non-negative"
 
         for _ in range(max_new_tokens):
             if seq_len > self.context_size:
                 context = context[:, -self.context_size :]
 
             logits = self.forward(context)
-            logits = logits[:, -1, :] / temperature
-            if top_k is not None:
-                v, _ = torch.topk(logits, top_k=min(top_k, logits.shape[-1]))
-                logits[logits < v[:, [-1]]] = -float("Inf")
 
-            probs = F.softmax(logits, dim=1)
-            tok_next = torch.multinomial(probs, num_samples=1)
+            if temperature == 0.0:
+                tok_next = torch.argmax(logits[:, -1, :], dim=1)
+            else:
+                logits = logits / temperature
+                logits = logits[:, -1, :] / temperature
+                if top_k is not None:
+                    v, _ = torch.topk(logits, top_k=min(top_k, logits.shape[-1]))
+                    logits[logits < v[:, [-1]]] = -float("Inf")
+
+                probs = F.softmax(logits, dim=1)
+                tok_next = torch.multinomial(probs, num_samples=1)
+
             context = torch.cat([context, tok_next], dim=-1)
 
             # TODO: Should stop generating when EOS token is generated; confirm
