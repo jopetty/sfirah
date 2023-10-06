@@ -20,6 +20,9 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-select = ["E", "F", "I", "N"]
+select = ["D", "E", "F", "I", "N"]
 line-length = 88
 target-version = "py310"
+
+[tool.ruff.pydocstyle]
+convention = "google"

@@ -1,3 +1,6 @@
+"""Tests for the metrics module."""
+
+
 import unittest
 
 from torch import Tensor
@@ -5,8 +8,8 @@ from torch import Tensor
 from sfirah import metrics
 
 
-class TestMetrics(unittest.TestCase):
-    def test_token_accuracy(self):
+class TestMetrics(unittest.TestCase):  # noqa: D101
+    def test_token_accuracy(self):  # noqa: D102
         # Single-sequence batch w/ perfect accuracy
         predictions = Tensor([[1, 2, 3, 4]])
         targets = Tensor([[1, 2, 3, 4]])
@@ -52,7 +55,7 @@ class TestMetrics(unittest.TestCase):
         targets = Tensor([[1]])
         self.assertEqual(metrics.token_accuracy(predictions, targets), 1.0)
 
-    def test_sequence_accuracy(self):
+    def test_sequence_accuracy(self):  # noqa: D102
         # Single-sequence batch w/ perfect accuracy
         predictions = Tensor([[1, 2, 3, 4]])
         targets = Tensor([[1, 2, 3, 4]])

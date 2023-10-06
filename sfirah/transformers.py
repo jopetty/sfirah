@@ -1,3 +1,6 @@
+"""Transformer models."""
+
+
 import logging
 
 import torch
@@ -16,7 +19,22 @@ logger = logging.getLogger(__name__)
 
 
 class SinusoidalPositionalEncoding(nn.Module):
+    """Sinusoidal positional encodings.
+
+    This module is copied from the PyTorch implementation, which for
+    some reason is not included as an official module.
+
+    See: https://pytorch.org/tutorials/beginner/transformer_tutorial.html#define-the-model
+    """
+
     def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
+        """Initialize the SinusoidalPositionalEncoding module.
+
+        Args:
+            d_model (int): The model/embedding dimension.
+            dropout (float): The dropout probability. Defaults to 0.1.
+            max_len (int): The maximum length of the sequence. Defaults to 5000.
+        """
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
         position = torch.arange(max_len).unsqueeze(1)
@@ -28,66 +46,80 @@ class SinusoidalPositionalEncoding(nn.Module):
         pe[:, 0, 1::2] = torch.cos(position * div_term)
         self.register_buffer("pe", pe)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor) -> Tensor:
+        """Perform the forward pass.
+
+        Args:
+            x (Tensor): The input tensor.
+        """
         x = x + self.pe[: x.size(0)]
         return self.dropout(x)
 
 
 class Transformer(nn.Module):
+    """A Transformer (encoder).
+
+    Provides a standard implementation of a transformer. This module is built
+    around PyTorch's TransformerEncoderLayer, but this is somewhat misleading---
+    this can be used as either an encoder or a decoder, depending on the type
+    of attention mask and the head attached.
+    """
+
     @property
-    def d_model(self) -> int:
+    def d_model(self) -> int:  # noqa: D102
         return self._d_model
 
     @property
-    def n_heads(self) -> int:
+    def n_heads(self) -> int:  # noqa: D102
         return self._n_heads
 
     @property
-    def d_ff(self) -> int:
+    def d_ff(self) -> int:  # noqa: D102
         return self._d_ff
 
     @property
-    def dropout(self) -> float:
+    def dropout(self) -> float:  # noqa: D102
         return self._dropout
 
     @property
-    def activation(self) -> str:
+    def activation(self) -> str:  # noqa: D102
         return self._activation
 
     @property
-    def n_layers(self) -> int:
+    def n_layers(self) -> int:  # noqa: D102
         return self._n_layers
 
     @property
-    def norm_first(self) -> bool:
+    def norm_first(self) -> bool:  # noqa: D102
         return self._norm_first
 
     @property
-    def layer_norm_eps(self) -> float:
+    def layer_norm_eps(self) -> float:  # noqa: D102
         return self._layer_norm_eps
 
     @property
-    def batch_first(self) -> bool:
+    def batch_first(self) -> bool:  # noqa: D102
         return self._batch_first
 
     @property
-    def weight_sharing(self) -> bool:
+    def weight_sharing(self) -> bool:  # noqa: D102
         return self._weight_sharing
 
     @property
-    def n_vocab(self) -> int:
+    def n_vocab(self) -> int:  # noqa: D102
         return self._n_vocab
 
     @property
-    def weight_scale(self) -> int:
+    def weight_scale(self) -> int:  # noqa: D102
         return self._weight_scale
 
     @property
-    def bias(self) -> bool:
+    def bias(self) -> bool:  # noqa: D102
         return self._bias
 
     @property
     def num_parameters(self) -> int:
+        """Return the total number of trainable parameters."""
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
     def __init__(
@@ -106,6 +138,23 @@ class Transformer(nn.Module):
         weight_scale: int,
         bias: bool,
     ):
+        """Initialize the Transformer module.
+
+        Args:
+            d_model (int): The model/embedding dimension.
+            n_heads (int): The number of attention heads.
+            d_ff (int): The dimension of the feed-forward layer.
+            dropout (float): The dropout probability.
+            activation (str): The activation function.
+            n_layers (int): The number of layers.
+            norm_first (bool): Whether to add layer-norm before attention.
+            layer_norm_eps (float): The layer-norm epsilon.
+            batch_first (bool): Whether the batch dimension is first.
+            weight_sharing (bool): Whether to share weights across layers.
+            n_vocab (int): The number of vocabulary items.
+            weight_scale (int): How much initial weights are scaled by.
+            bias (bool): Whether to include bias parameters.
+        """
         super().__init__()
 
         self._d_model = d_model
@@ -154,6 +203,14 @@ class Transformer(nn.Module):
         src_key_padding_mask: Tensor | None = None,
         is_causal: bool = False,
     ) -> Tensor:
+        """Perform the forward pass.
+
+        Args:
+            x (Tensor): The input tensor.
+            mask (Tensor | None): The attention mask.
+            src_key_padding_mask (Tensor | None): The source key padding mask.
+            is_causal (bool): Whether the attention is causal.
+        """
         x = self.embedding(x)
         x = self.transformer(
             x,
@@ -165,7 +222,24 @@ class Transformer(nn.Module):
 
 
 class EncoderSequenceClassifier(Transformer):
+    """A Transformer encoder with a linear classifier head & sequence pooling.
+
+    This is a standard Transformer encoder with a linear classifier head
+    which builds sentence representations by index pooling to a particular
+    token in the input (e.g., the CLS token).
+
+    This model us useful for classifying sequences; e.g., for sentiment
+    classification.
+    """
+
     def __init__(self, cl_dim: int, cl_index: int, **kwargs: dict):
+        """Initialize the EncoderSequenceClassifier.
+
+        Args:
+            cl_dim (int): The dimension to pool.
+            cl_index (int): The index to pool.
+            **kwargs (dict): Additional keyword arguments.
+        """
         super().__init__(**kwargs)
 
         self.cl_head = nn.Sequential(
@@ -187,6 +261,14 @@ class EncoderSequenceClassifier(Transformer):
         src_key_padding_mask: Tensor | None = None,
         is_causal: bool = False,
     ) -> torch.Tensor:
+        """Perform the forward pass.
+
+        Args:
+            x (Tensor): The input tensor.
+            mask (Tensor | None): The attention mask.
+            src_key_padding_mask (Tensor | None): The source key padding mask.
+            is_causal (bool): Whether the attention is causal.
+        """
         x = super().forward(
             x,
             mask=mask,
@@ -198,7 +280,15 @@ class EncoderSequenceClassifier(Transformer):
 
 
 class EncoderTokenClassifier(Transformer):
-    def __init__(self, **kwargs):
+    """A Transformer encoder with a linear classifier head.
+
+    This is a standard Transformer encoder with a linear classifier head
+    which computes a per-token classification. No sequence pooling is done,
+    so this model us suitable for token-level classification tasks, like
+    POS-tagging.
+    """
+
+    def __init__(self, **kwargs):  # noqa: D107
         super().__init__(**kwargs)
 
         self.cl_head = nn.Linear(
@@ -217,6 +307,14 @@ class EncoderTokenClassifier(Transformer):
         src_key_padding_mask: Tensor | None = None,
         is_causal: bool = False,
     ) -> Tensor:
+        """Perform the forward pass.
+
+        Args:
+            x (Tensor): The input tensor.
+            mask (Tensor | None): The attention mask.
+            src_key_padding_mask (Tensor | None): The source key padding mask.
+            is_causal (bool): Whether the attention is causal.
+        """
         x = super().forward(
             x, mask=mask, src_key_padding_mask=src_key_padding_mask, is_causal=is_causal
         )
@@ -229,11 +327,23 @@ class EncoderTokenClassifier(Transformer):
 
 
 class CausalDecoder(Transformer):
+    """A Transformer with a causal-attention mask.
+
+    This implements a GPT-style decoder-only model, suitable for autoregressive
+    tasks.
+    """
+
     @property
-    def context_size(self) -> int:
+    def context_size(self) -> int:  # noqa: D102
         return self._context_size
 
     def __init__(self, context_size: int, **kwargs):
+        """Initialize the CausalDecoder.
+
+        Args:
+            context_size (int): The size of the context window.
+            **kwargs (dict): Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self._context_size = context_size
         self.lm_head = nn.Linear(
@@ -252,6 +362,14 @@ class CausalDecoder(Transformer):
         src_key_padding_mask: Tensor | None = None,
         is_causal: bool = True,
     ) -> torch.Tensor:
+        """Perform the forward pass.
+
+        Args:
+            x (Tensor): The input tensor.
+            mask (Tensor | None): The attention mask.
+            src_key_padding_mask (Tensor | None): The source key padding mask.
+            is_causal (bool): Whether the attention is causal.
+        """
         x = super().forward(
             x,
             mask=mask,
@@ -272,7 +390,17 @@ class CausalDecoder(Transformer):
         max_length: int = 2048,
         temperature: float = 1.0,
         top_k: int | None = None,
+        eos_token_id: int | None = None,
     ):
+        r"""Generate a sequence of tokens conditioned on some context.
+
+        Args:
+            context (Tensor): The context/model "inputs".
+            max_length (int): The maximum length of the generated sequence.
+            temperature (float): Controls how random the outputs are (0, \infty).
+            top_k (int | None): The top-k sampling. Defaults to None.
+            eos_token_id (int | None): The end-of-sequence token ID. Defaults to None.
+        """
         seq_len = context.shape[1]
         max_new_tokens = max_length - seq_len
 
@@ -291,5 +419,10 @@ class CausalDecoder(Transformer):
             probs = F.softmax(logits, dim=1)
             tok_next = torch.multinomial(probs, num_samples=1)
             context = torch.cat([context, tok_next], dim=-1)
+
+            # TODO: Should stop generating when EOS token is generated; confirm
+            #       that this actually works
+            if eos_token_id is not None and tok_next.item() == eos_token_id:
+                break
 
         return context

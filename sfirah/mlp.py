@@ -1,3 +1,6 @@
+"""Provides Multi-layer Perceptrion implementations."""
+
+
 import logging
 from copy import deepcopy
 
@@ -14,52 +17,61 @@ logger = logging.getLogger(__name__)
 
 
 class MLP(nn.Module):
+    """A multi-layer perceptron.
+
+    A standard MLP which is _not_ channel-wise independent;
+    Each sequence in a batch is flattened so that the MLP can
+    compute non-local interactions between tokens. This makes it
+    different from the FF block in a Transformer.
+    """
+
     @property
-    def d_model(self) -> int:
+    def d_model(self) -> int:  # noqa: D102
         return self._d_model
 
     @property
-    def n_layers(self) -> int:
+    def n_layers(self) -> int:  # noqa: D102
         return self._n_layers
 
     @property
     def num_parameters(self) -> int:
+        """Return the total number of trainable parameters."""
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
     @property
-    def d_ff(self) -> int:
+    def d_ff(self) -> int:  # noqa: D102
         return self._d_ff
 
     @property
-    def dropout(self) -> float:
+    def dropout(self) -> float:  # noqa: D102
         return self._dropout
 
     @property
-    def activation(self) -> str:
+    def activation(self) -> str:  # noqa: D102
         return self._activation
 
     @property
-    def n_vocab(self) -> int:
+    def n_vocab(self) -> int:  # noqa: D102
         return self._n_vocab
 
     @property
-    def bias(self) -> bool:
+    def bias(self) -> bool:  # noqa: D102
         return self._bias
 
     @property
-    def seq_len(self) -> int:
+    def seq_len(self) -> int:  # noqa: D102
         return self._seq_len
 
     @property
-    def layer_norm_eps(self) -> float:
+    def layer_norm_eps(self) -> float:  # noqa: D102
         return self._layer_norm_eps
 
     @property
-    def weight_scale(self) -> float:
+    def weight_scale(self) -> float:  # noqa: D102
         return self._weight_scale
 
     @property
-    def weight_sharing(self) -> bool:
+    def weight_sharing(self) -> bool:  # noqa: D102
         return self._weight_sharing
 
     def __init__(
@@ -76,6 +88,21 @@ class MLP(nn.Module):
         bias: bool,
         seq_len: int,
     ):
+        """Initialize the MLP.
+
+        Args:
+            d_model (int): The embedding/model dimension.
+            d_ff (int): The feed-forward dimension.
+            dropout (float): The dropout probability.
+            activation (str): The activation function.
+            n_layers (int): The number of layers.
+            n_vocab (int): The number of vocabulary tokens.
+            weight_sharing (bool): Whether to share weights across layers.
+            weight_scale (float): How much initial weights are scaled by.
+            layer_norm_eps (float): The layer norm epsilon.
+            bias (bool): Whether to include bias parameters.
+            seq_len (int): The sequence length.
+        """
         super().__init__()
 
         self._d_model = d_model
@@ -110,6 +137,11 @@ class MLP(nn.Module):
             p = p * weight_scale
 
     def forward(self, x: Tensor) -> Tensor:
+        """Perform the forward pass.
+
+        Args:
+            x (Tensor): The input tensor.
+        """
         if self.weight_sharing or len(self.ff) == 1:
             assert self.ff[0] == self.ff[-1], "Weights are not shared!"
         else:
@@ -123,7 +155,10 @@ class MLP(nn.Module):
 
 
 class MLPSequenceClassifier(MLP):
+    """An MLP with a linear classifier head."""
+
     def __init__(self, **kwargs):
+        """Initialize the MLPSequenceClassifier."""
         super().__init__(**kwargs)
 
         self.cl_head = nn.Linear(self.d_model, self.n_vocab, bias=self.bias)
@@ -132,6 +167,11 @@ class MLPSequenceClassifier(MLP):
             p = p * self.weight_scale
 
     def forward(self, x: Tensor) -> Tensor:
+        """Perform the forward pass.
+
+        Args:
+            x (Tensor): The input tensor.
+        """
         x = super().forward(x)
         x = self.cl_head(x)
         return x

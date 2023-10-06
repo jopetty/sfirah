@@ -1,3 +1,6 @@
+"""Some useful utilities."""
+
+
 import logging
 from collections.abc import Callable
 
@@ -13,6 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 def _get_funcational_activation(activation: str) -> Callable:
+    """Get a callable (funcational) activation function.
+
+    nn.TransformerEncoderLayers expect a callable activation function.
+
+    Args:
+        activation (str): The name of the activation function.
+    """
     activation_funcs = {
         "celu": F.celu,
         "elu": F.elu,
@@ -58,6 +68,13 @@ def _get_funcational_activation(activation: str) -> Callable:
 
 
 def _get_module_activation(activation: str) -> nn.Module:
+    """Get an activation function module.
+
+    For use in, e.g., an nn.Sequential(...) stack.
+
+    Args:
+        activation (str): The name of the activation function.
+    """
     activation_mods = {
         "celu": nn.CELU,
         "elu": nn.ELU,
@@ -103,6 +120,12 @@ def _get_module_activation(activation: str) -> nn.Module:
 
 
 def get_activation(activation: str, functional: bool = False) -> Callable | nn.Module:
+    """Get an activation function.
+
+    Args:
+        activation (str): The name of the activation function.
+        functional (bool): Whether to return a functional or module activation.
+    """
     if functional:
         return _get_funcational_activation(activation)
     else:
