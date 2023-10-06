@@ -30,7 +30,6 @@ def token_accuracy(predictions: Tensor, targets: Tensor) -> float:
         predictions = predictions.argmax(dim=1)
 
     assert predictions.size() == targets.size()
-    assert predictions.dim() == 2
 
     return (predictions == targets).float().mean().item()
 
