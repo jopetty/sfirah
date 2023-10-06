@@ -193,6 +193,9 @@ class Transformer(nn.Module):
         if self.weight_sharing:
             self.transformer.layers = nn.ModuleList([layer] * n_layers)
 
+        # TODO: Does weight_sharing break this? If we share weights are we
+        #       scaling the layers multiple times? Check to make sure this
+        #       isn't happening!
         for _, p in self.named_parameters():
             p = p * weight_scale
 
