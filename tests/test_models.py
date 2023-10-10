@@ -50,8 +50,8 @@ class TestEncoderTokenClassifer(unittest.TestCase):  # noqa: D101
         x = torch.ones([batch_size, seq_len], dtype=torch.int64)
         y = model(x)
 
-        assert y.shape == torch.Size([batch_size, n_vocab, seq_len])
-        assert torch.isnan(y).any() is False
+        self.assertEqual(y.shape, torch.Size([batch_size, n_vocab, seq_len]))
+        self.assertFalse(torch.isnan(y).any())
 
 
 class TestEncoderSequenceClassifier(unittest.TestCase):  # noqa: D101
@@ -100,8 +100,12 @@ class TestEncoderSequenceClassifier(unittest.TestCase):  # noqa: D101
         x = torch.ones([batch_size, seq_len], dtype=torch.int64)
         y = model(x)
 
-        assert y.shape == torch.Size([batch_size, n_vocab])
-        assert torch.isnan(y).any() is False
+        print(x.shape)
+        print(y.shape)
+        print(model)
+
+        self.assertEqual(y.shape, torch.Size([batch_size, n_vocab]))
+        self.assertFalse(torch.isnan(y).any())
 
 
 class TestCausalDecoder(unittest.TestCase):  # noqa: D101
