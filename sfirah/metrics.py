@@ -45,7 +45,7 @@ def token_accuracy(
         ignore_index (int, optional): An index to ignore in the loss. Defaults to None.
     """
     if predictions.dim() != targets.dim():
-        predictions = predictions.argmax(dim=1)
+        predictions = predictions.argmax(dim=-1)
 
     assert predictions.size() == targets.size()
 
@@ -69,7 +69,7 @@ def sequence_accuracy(
         ignore_index (int, optional): An index to ignore in the loss. Defaults to None.
     """
     if predictions.dim() != targets.dim():
-        predictions = predictions.argmax(dim=1)
+        predictions = predictions.argmax(dim=-1)
 
     assert (
         predictions.size() == targets.size()
