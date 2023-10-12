@@ -322,10 +322,6 @@ class EncoderTokenClassifier(Transformer):
             x, mask=mask, src_key_padding_mask=src_key_padding_mask, is_causal=is_causal
         )
         x = self.cl_head(x)
-
-        # logits are of shape (batch_size, seq_len, n_vocab), but
-        # F.cross_entropy expects (batch_size, n_vocab, seq_len)
-        x = x.transpose(-1, -2)
         return x
 
 
@@ -380,10 +376,6 @@ class CausalDecoder(Transformer):
             is_causal=is_causal,
         )
         x = self.lm_head(x)
-
-        # logits are of shape (batch_size, seq_len, n_vocab), but
-        # F.cross_entropy expects (batch_size, n_vocab, seq_len)
-        x = x.transpose(-1, -2)
         return x
 
     @torch.no_grad()
