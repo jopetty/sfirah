@@ -71,7 +71,9 @@ def sequence_accuracy(
     if predictions.dim() != targets.dim():
         predictions = predictions.argmax(dim=1)
 
-    assert predictions.size() == targets.size()
+    assert (
+        predictions.size() == targets.size()
+    ), f"{predictions.size()} != {targets.size()}"
 
     return (
         (predictions == targets)
