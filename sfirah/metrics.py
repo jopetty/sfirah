@@ -15,6 +15,8 @@ def ce_loss(
         targets (Tensor): The targets.
         ignore_index (int, optional): An index to ignore in the loss. Defaults to None.
     """
+    targets = targets.flatten()
+    predictions = predictions.flatten(end_dim=-2)
     return (
         F.cross_entropy(
             input=predictions,
