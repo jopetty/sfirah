@@ -55,10 +55,6 @@ class MLP(nn.Module):
         return self._bias
 
     @property
-    def seq_len(self) -> int:  # noqa: D102
-        return self._seq_len
-
-    @property
     def layer_norm_eps(self) -> float:  # noqa: D102
         return self._layer_norm_eps
 
@@ -81,7 +77,6 @@ class MLP(nn.Module):
         weight_scale: float,
         layer_norm_eps: float,
         bias: bool,
-        seq_len: int,
     ):
         """Initialize the MLP.
 
@@ -91,12 +86,10 @@ class MLP(nn.Module):
             dropout (float): The dropout probability.
             activation (str): The activation function.
             n_layers (int): The number of layers.
-            n_vocab (int): The number of vocabulary tokens.
             weight_sharing (bool): Whether to share weights across layers.
             weight_scale (float): How much initial weights are scaled by.
             layer_norm_eps (float): The layer norm epsilon.
             bias (bool): Whether to include bias parameters.
-            seq_len (int): The sequence length.
         """
         super().__init__()
 
@@ -109,11 +102,9 @@ class MLP(nn.Module):
         self._weight_scale = weight_scale
         self._layer_norm_eps = layer_norm_eps
         self._bias = bias
-        self._seq_len = seq_len
 
         ff_layer = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(d_model * seq_len, d_ff, bias=bias),
+            nn.Linear(d_model, d_ff, bias=bias),
             get_activation(activation, functional=False),
             nn.Dropout(dropout),
             nn.Linear(d_ff, d_model, bias=bias),
