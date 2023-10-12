@@ -4,6 +4,7 @@
 import unittest
 
 import torch
+from torch.nn import functional as F  # noqa: N812
 
 from sfirah import transformers
 
@@ -50,8 +51,38 @@ class TestEncoderTokenClassifer(unittest.TestCase):  # noqa: D101
         x = torch.ones([batch_size, seq_len], dtype=torch.int64)
         y = model(x)
 
-        self.assertEqual(y.shape, torch.Size([batch_size, n_vocab, seq_len]))
+        self.assertEqual(y.shape, torch.Size([batch_size, seq_len, n_vocab]))
         self.assertFalse(torch.isnan(y).any())
+
+    def test_ce(self):  # noqa: D102
+        batch_size = 2
+        seq_len = 4
+        n_vocab = 30
+
+        model = transformers.EncoderTokenClassifier(
+            d_model=10,
+            d_ff=20,
+            dropout=0.1,
+            activation="relu",
+            n_layers=2,
+            n_heads=2,
+            norm_first=False,
+            batch_first=True,
+            n_vocab=n_vocab,
+            weight_sharing=True,
+            bias=True,
+            layer_norm_eps=1e-5,
+            weight_scale=1.0,
+        )
+
+        x = torch.ones([batch_size, seq_len], dtype=torch.int64)
+        y = x
+        y_hat = model(x)
+
+        y_hat = torch.flatten(y_hat, start_dim=0, end_dim=-2)
+        y = torch.flatten(y)
+
+        F.cross_entropy(y_hat, y)
 
 
 class TestEncoderSequenceClassifier(unittest.TestCase):  # noqa: D101
