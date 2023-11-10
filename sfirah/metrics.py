@@ -7,7 +7,7 @@ from torch.nn import functional as F  # noqa: N812
 
 def ce_loss(
     predictions: Tensor, targets: Tensor, ignore_index: int | None = None
-) -> float:
+) -> dict[str, float]:
     """Compute the cross-entropy loss.
 
     Args:
@@ -17,7 +17,7 @@ def ce_loss(
     """
     targets = targets.flatten()
     predictions = predictions.flatten(end_dim=-2)
-    return (
+    value = (
         F.cross_entropy(
             input=predictions,
             target=targets,
@@ -27,10 +27,15 @@ def ce_loss(
         .item()
     )
 
+    return {
+        "value": value,
+        "n_samples": targets.size(0),
+    }
+
 
 def token_accuracy(
     predictions: Tensor, targets: Tensor, ignore_index: int | None = None
-) -> float:
+) -> dict[str, float]:
     """Compute the per-token accuracy of a batch of predictions.
 
     Computes the number of correctly-predicted tokens divided by the
@@ -49,12 +54,17 @@ def token_accuracy(
 
     assert predictions.size() == targets.size()
 
-    return (predictions == targets).float().mean().item()
+    value = (predictions == targets).float().mean().item()
+
+    return {
+        "value": value,
+        "n_samples": targets.numel(),
+    }
 
 
 def sequence_accuracy(
     predictions: Tensor, targets: Tensor, ignore_index: int | None = None
-) -> float:
+) -> dict[str, float]:
     """Compute the per-sequence accuracy of a batch of predictions.
 
     Computes the number of correctly-predicted sequences divided by the
@@ -75,7 +85,7 @@ def sequence_accuracy(
         predictions.size() == targets.size()
     ), f"{predictions.size()} != {targets.size()}"
 
-    return (
+    value = (
         (predictions == targets)
         .float()
         .sum(dim=1)
@@ -84,3 +94,8 @@ def sequence_accuracy(
         .mean()
         .item()
     )
+
+    return {
+        "value": value,
+        "n_samples": targets.size(0),
+    }
