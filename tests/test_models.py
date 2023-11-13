@@ -169,7 +169,7 @@ class TestCausalDecoder(unittest.TestCase):  # noqa: D101
             n_heads=2,
             norm_first=False,
             batch_first=True,
-            n_vocab=30,
+            n_vocab=10,
             weight_sharing=True,
             bias=True,
             layer_norm_eps=1e-5,
@@ -178,7 +178,7 @@ class TestCausalDecoder(unittest.TestCase):  # noqa: D101
 
         x = torch.ones([1, 11], dtype=torch.int64)
 
-        y = model.generate(x, max_length=21, temperature=0.0)
+        y = model.generate(x, max_length=21, temperature=0.0, eos_token_id=5)
 
         print(x)
         print(y)

@@ -402,7 +402,13 @@ class CausalDecoder(Transformer):
         assert max_new_tokens > 0, "Context is longer than max_length"
         assert temperature >= 0, "Temperature must be non-negative"
 
-        print(f"Temperature: {temperature}")
+        # print(f"Temperature: {temperature}")
+        if temperature == 0.0:
+            logger.info("Generating with greedy decoding")
+        else:
+            logger.info(
+                f"Generating with top-{top_k} sampling with temperature {temperature}"
+            )
 
         for t in range(max_new_tokens):
             if seq_len > self.context_size:
@@ -436,6 +442,9 @@ class CausalDecoder(Transformer):
             # TODO: Should stop generating when EOS token is generated; confirm
             #       that this actually works
             if eos_token_id is not None and tok_next.item() == eos_token_id:
+                logger.info(
+                    f"EOS token generated. Stopping generation after {t+1} tokens."
+                )
                 break
 
         return context
