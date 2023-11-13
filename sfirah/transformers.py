@@ -410,6 +410,7 @@ class CausalDecoder(Transformer):
 
         if stream:
             assert tokenizer is not None, "You must provide a tokenizer to stream."
+            print("streaming!")
 
         if tokenizer is not None:
             eos_token_id = tokenizer.eos_token_id
