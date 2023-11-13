@@ -425,6 +425,7 @@ class CausalDecoder(Transformer):
                 # TODO: Check dimensions here
                 tok_next = torch.argmax(logits[:, -1, :], dim=-1).unsqueeze(-1)
                 # print(f"tok_next: {tok_next.shape}")
+                print(f"{t}: {tok_next}")
             else:
                 logits = logits / temperature
                 logits = logits[:, -1, :] / temperature
