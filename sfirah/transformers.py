@@ -402,7 +402,9 @@ class CausalDecoder(Transformer):
         assert max_new_tokens > 0, "Context is longer than max_length"
         assert temperature >= 0, "Temperature must be non-negative"
 
-        for _ in range(max_new_tokens):
+        print(f"Temperature: {temperature}")
+
+        for t in range(max_new_tokens):
             if seq_len > self.context_size:
                 context = context[:, -self.context_size :]
 
@@ -413,8 +415,10 @@ class CausalDecoder(Transformer):
             logits = self.forward(context, mask=mask)
 
             if temperature == 0.0:
+                # print(f"logits: {logits.shape}")
                 # TODO: Check dimensions here
-                tok_next = torch.argmax(logits[:, -1, :], dim=1)
+                tok_next = torch.argmax(logits[:, -1, :], dim=-1).unsqueeze(-1)
+                # print(f"tok_next: {tok_next.shape}")
             else:
                 logits = logits / temperature
                 logits = logits[:, -1, :] / temperature
@@ -423,7 +427,9 @@ class CausalDecoder(Transformer):
                     logits[logits < v[:, [-1]]] = -float("Inf")
 
                 probs = F.softmax(logits, dim=1)
+                print(f"probs: {probs.shape}")
                 tok_next = torch.multinomial(probs, num_samples=1)
+                print(f"tok_next: {tok_next.shape}")
 
             context = torch.cat([context, tok_next], dim=-1)
 

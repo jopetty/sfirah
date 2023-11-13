@@ -158,6 +158,31 @@ class TestCausalDecoder(unittest.TestCase):  # noqa: D101
             weight_scale=1.0,
         )
 
+    def test_generate(self):  # noqa: D102
+        model = transformers.CausalDecoder(
+            context_size=128,
+            d_model=10,
+            d_ff=20,
+            dropout=0.1,
+            activation="relu",
+            n_layers=2,
+            n_heads=2,
+            norm_first=False,
+            batch_first=True,
+            n_vocab=30,
+            weight_sharing=True,
+            bias=True,
+            layer_norm_eps=1e-5,
+            weight_scale=1.0,
+        )
+
+        x = torch.ones([1, 11], dtype=torch.int64)
+
+        y = model.generate(x, max_length=21, temperature=0.0)
+
+        print(x)
+        print(y)
+
 
 if __name__ == "__main__":
     unittest.main()
