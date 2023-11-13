@@ -449,7 +449,7 @@ class CausalDecoder(Transformer):
 
             context = torch.cat([context, tok_next], dim=-1)
             if stream and tokenizer is not None:
-                print(tokenizer.decode(tok_next.squeeze()), end=" ")
+                logger.info(tokenizer.decode(tok_next.squeeze()))
 
             if eos_token_id is not None and tok_next.item() == eos_token_id:
                 logger.info(
