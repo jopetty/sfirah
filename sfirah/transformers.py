@@ -406,7 +406,11 @@ class CausalDecoder(Transformer):
             if seq_len > self.context_size:
                 context = context[:, -self.context_size :]
 
-            logits = self.forward(context)
+            mask = torch.nn.Transformer.generate_square_subsequent_mask(
+                context.shape[1], device=context.device
+            )
+
+            logits = self.forward(context, mask=mask)
 
             if temperature == 0.0:
                 # TODO: Check dimensions here
