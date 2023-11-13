@@ -421,27 +421,18 @@ class CausalDecoder(Transformer):
             logits = self.forward(context, mask=mask)
 
             if temperature == 0.0:
-                # print(f"logits: {logits.shape}")
-                # TODO: Check dimensions here
                 tok_next = torch.argmax(logits[:, -1, :], dim=-1).unsqueeze(-1)
-                # print(f"tok_next: {tok_next.shape}")
-                print(f"{t}: {tok_next}")
             else:
-                logits = logits / temperature
                 logits = logits[:, -1, :] / temperature
                 if top_k is not None:
                     v, _ = torch.topk(logits, top_k=min(top_k, logits.shape[-1]))
                     logits[logits < v[:, [-1]]] = -float("Inf")
 
                 probs = F.softmax(logits, dim=1)
-                print(f"probs: {probs.shape}")
                 tok_next = torch.multinomial(probs, num_samples=1)
-                print(f"tok_next: {tok_next.shape}")
 
             context = torch.cat([context, tok_next], dim=-1)
 
-            # TODO: Should stop generating when EOS token is generated; confirm
-            #       that this actually works
             if eos_token_id is not None and tok_next.item() == eos_token_id:
                 logger.info(
                     f"EOS token generated. Stopping generation after {t+1} tokens."
