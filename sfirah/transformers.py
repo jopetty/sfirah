@@ -2,6 +2,7 @@
 
 
 import logging
+from typing import Any
 
 import torch
 from torch import Tensor, nn
@@ -382,22 +383,36 @@ class CausalDecoder(Transformer):
     def generate(
         self,
         context: Tensor,
+        tokenizer: Any | None = None,
         max_length: int = 2048,
         temperature: float = 1.0,
         top_k: int | None = None,
         eos_token_id: int | None = None,
+        stream: bool = False,
     ):
         r"""Generate a sequence of tokens conditioned on some context.
 
         Args:
             context (Tensor): The context/model "inputs".
+            tokenizer: The tokenizer to use for decoding.
             max_length (int): The maximum length of the generated sequence.
             temperature (float): Controls how random the outputs are (0, \infty).
             top_k (int | None): The top-k sampling. Defaults to None.
             eos_token_id (int | None): The end-of-sequence token ID. Defaults to None.
+            stream (bool): Whether to stream the output. Defaults to False.
         """
         seq_len = context.shape[1]
         max_new_tokens = max_length - seq_len
+
+        assert (tokenizer is None) != (
+            eos_token_id is None
+        ), "You must provide either a tokenizer or an EOS token ID."
+
+        if stream:
+            assert tokenizer is not None, "You must provide a tokenizer to stream."
+
+        if tokenizer is not None:
+            eos_token_id = tokenizer.eos_token_id
 
         assert max_new_tokens > 0, "Context is longer than max_length"
         assert temperature >= 0, "Temperature must be non-negative"
@@ -432,6 +447,8 @@ class CausalDecoder(Transformer):
                 tok_next = torch.multinomial(probs, num_samples=1)
 
             context = torch.cat([context, tok_next], dim=-1)
+            if stream and tokenizer is not None:
+                print(tokenizer.decode(tok_next.squeeze()), end=" ")
 
             if eos_token_id is not None and tok_next.item() == eos_token_id:
                 logger.info(
