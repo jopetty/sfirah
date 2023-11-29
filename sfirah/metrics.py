@@ -1,8 +1,80 @@
 """Metrics for evaluating model performance."""
 
-
+import torch
 from torch import Tensor
 from torch.nn import functional as F  # noqa: N812
+
+
+def detach_and_pad(
+    data: list[(Tensor, Tensor)], pad_token_id: int
+) -> dict[str, Tensor]:
+    """Detach tensors from accelerator and pad them to be the same length.
+
+    Args:
+        data (list[(Tensor, Tensor)]): A list of (prediction, target) tuples.
+        pad_token_id (int): The ID of the padding token.
+    """
+    preds = [d[0].cpu().detach() for d in data]
+    tgts = [d[1].cpu().detach() for d in data]
+
+    max_pred_len = max([p.shape[1] for p in preds])
+    min_pred_len = min([p.shape[1] for p in preds])
+    max_tgt_len = max([t.shape[-1] for t in tgts])
+    min_tgt_len = min([t.shape[-1] for t in tgts])
+
+    if max_pred_len != min_pred_len:
+        for idx, p in enumerate(preds):
+            pred_pad_size = max_pred_len - p.shape[1]
+            if pred_pad_size > 0:
+                padding_logits = torch.ones_like(p[:, [0], :]) * float("-inf")
+                padding_logits[:, :, pad_token_id] = 1.0
+                padding_logits = torch.cat([padding_logits] * pred_pad_size, dim=1)
+                preds[idx] = torch.cat((padding_logits, p), dim=1)
+
+    if max_tgt_len != min_tgt_len:
+        for idx, t in enumerate(tgts):
+            tgt_pad_size = max_tgt_len - t.shape[-1]
+            if tgt_pad_size > 0:
+                t = F.pad(t, (tgt_pad_size, 0), mode="constant", value=pad_token_id)
+                tgts[idx] = t
+
+    try:
+        preds = torch.cat(preds, dim=0)
+        tgts = torch.cat(tgts, dim=0)
+    except RuntimeError:
+        print(preds.shape)
+        print(tgts.shape)
+
+    return {"predictions": preds, "targets": tgts}
+
+
+def reduce_metrics(values: list[dict[str, any]]) -> dict[str, any]:
+    """Returns a average of metrics weighted by sample count across batches.
+
+    For each metric, computes the average across all batches weighted by the number
+    of samples in each batch. The number of samples can vary depending on the kind of
+    metric. For example, token-level metrics will have `batch_size * sequence_length`
+    samples, while sequence-level metrics will have `batch_size` samples.
+
+    Args:
+        values (list[dict[str, any]]): A list of metrics for each batch. The list should
+            be `num_batches` long, and each element is a dictionary of metrics. Each
+            metric is itself a dictionary with keys `value` and `n_samples`.
+    """
+    metric_names = values[0].keys()
+    weighted_metrics = {k: {"value": 0, "n_samples": 0} for k in metric_names}
+
+    for v in values:
+        for k in metric_names:
+            weighted_metrics[k]["value"] += v[k]["value"] * v[k]["n_samples"]
+            weighted_metrics[k]["n_samples"] += v[k]["n_samples"]
+
+    for k in metric_names:
+        weighted_metrics[k] = (
+            weighted_metrics[k]["value"] / weighted_metrics[k]["n_samples"]
+        )
+
+    return weighted_metrics
 
 
 def ce_loss(
