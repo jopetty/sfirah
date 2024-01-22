@@ -10,13 +10,15 @@ python = "^3.10"
 torch = "^2.0"
 numpy = ">=1.25"
 tqdm = "^4.66"
+causal-conv1d = "^1.1"
+mamba-ssm = ">1.0"
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^3.4"
 python-dotenv = "^1.0"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core", "packaging", "wheel"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
