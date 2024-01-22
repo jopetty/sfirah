@@ -13,7 +13,6 @@ try:
 except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
-from .transformers import SinusoidalPositionalEncoding
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -91,10 +90,7 @@ class MambaModel(nn.Module):
         self._bias = bias
         self._dropout = dropout
 
-        self.embedding = nn.Sequential(
-            nn.Embedding(n_vocab, d_model),
-            SinusoidalPositionalEncoding(d_model=d_model, dropout=dropout),
-        )
+        self.embedding = nn.Embedding(n_vocab, d_model)
 
         if self.fused_add_norm:
             if layer_norm_fn is None or rms_norm_fn is None:
