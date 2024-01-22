@@ -1,5 +1,7 @@
 """Metrics for evaluating model performance."""
 
+from collections.abc import Callable
+
 import torch
 from torch import Tensor
 from torch.nn import functional as F  # noqa: N812
@@ -171,3 +173,37 @@ def sequence_accuracy(
         "value": value,
         "n_samples": targets.size(0),
     }
+
+
+def compute_metrics(
+    batch: list[(Tensor, Tensor)],
+    pad_token_id: int,
+    metric_fns: dict[str, Callable] = {
+        "loss": ce_loss,
+        "token_accuracy": token_accuracy,
+        "sequence_accuracy": sequence_accuracy,
+    },
+    prefix: str | None = None,
+) -> dict:
+    """Compute metrics on a single batch of prediction-target pairs.
+
+    Args:
+        batch (list[(Tensor, Tensor)]): A list of (prediction, target) tuples.
+        pad_token_id (int): The ID of the padding token.
+        metric_fns (dict[str, Callable], optional): A dictionary of metric functions.
+            Defaults to `ce_loss`, `token_accuracy`, and `sequence_accuracy`.
+        prefix (str, optional): A prefix to add to the metric names. Defaults to None.
+    """
+    values_dict = {}
+
+    data = detach_and_pad(batch, pad_token_id=pad_token_id)
+    predicted_logits = data["predictions"]
+    target_tokens = data["targets"]
+
+    prefix_str = "" if prefix is None else f"{prefix}/"
+    for metric_name, metric_fn in metric_fns.items():
+        values_dict[prefix_str + metric_name] = metric_fn(
+            predicted_logits, target_tokens, pad_token_id
+        )
+
+    return values_dict
