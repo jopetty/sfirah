@@ -13,6 +13,7 @@ try:
 except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
+from .transformers import SinusoidalPositionalEncoding
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -58,6 +59,10 @@ class MambaModel(nn.Module):
         return self._bias
 
     @property
+    def dropout(self) -> bool:  # noqa: D102
+        return self._dropout
+
+    @property
     def num_parameters(self) -> int:  # noqa: D102
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
@@ -71,6 +76,7 @@ class MambaModel(nn.Module):
         fused_add_norm: bool = False,
         residual_in_fp32: bool = False,
         bias: bool = False,
+        dropout: float = 0.1,
     ):
         """Initialize a bare Mamba module."""
         super().__init__()
@@ -83,8 +89,12 @@ class MambaModel(nn.Module):
         self._residual_in_fp32 = residual_in_fp32
         self._n_vocab = n_vocab
         self._bias = bias
+        self._dropout = dropout
 
-        self.embedding = nn.Embedding(n_vocab, d_model)
+        self.embedding = nn.Sequential(
+            nn.Embedding(n_vocab, d_model),
+            SinusoidalPositionalEncoding(d_model=d_model, dropout=dropout),
+        )
 
         if self.fused_add_norm:
             if layer_norm_fn is None or rms_norm_fn is None:
