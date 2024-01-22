@@ -5,6 +5,7 @@ import logging
 from functools import partial
 from typing import Any
 
+from mamba_ssm.models.mixer_seq_simple import _init_weights
 from mamba_ssm.modules.mamba_simple import Block, Mamba
 from torch import Tensor, nn
 
@@ -74,6 +75,7 @@ class MambaModel(nn.Module):
         layer_norm_eps: float = 1e-5,
         fused_add_norm: bool = False,
         residual_in_fp32: bool = False,
+        initializer_cfg=None,
         bias: bool = False,
         dropout: float = 0.1,
     ):
@@ -109,6 +111,18 @@ class MambaModel(nn.Module):
                 )
                 for i in range(n_layers)
             ]
+        )
+
+        self.norm_f = (nn.LayerNorm if not rms_norm else RMSNorm)(
+            d_model, eps=layer_norm_eps
+        )
+
+        self.apply(
+            partial(
+                _init_weights,
+                n_layer=n_layers,
+                **(initializer_cfg if initializer_cfg is not None else {}),
+            )
         )
 
     def forward(self, x: Tensor, inference_params=None) -> Tensor:
