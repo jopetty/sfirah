@@ -12,6 +12,7 @@ numpy = ">=1.25"
 tqdm = "^4.66"
 causal-conv1d = "^1.1"
 mamba-ssm = ">1.0"
+"s4@git+https://github.com/state-spaces/s4" = "^4.1"
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^3.4"

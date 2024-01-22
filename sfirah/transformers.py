@@ -260,7 +260,7 @@ class EncoderSequenceClassifier(Transformer):
 
     def forward(
         self,
-        x: torch.Tensor,
+        x: Tensor,
         mask: Tensor | None = None,
         src_key_padding_mask: Tensor | None = None,
         is_causal: bool = False,

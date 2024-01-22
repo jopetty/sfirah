@@ -6,7 +6,9 @@ from functools import partial
 from typing import Any
 
 from mamba_ssm.models.mixer_seq_simple import _init_weights
-from mamba_ssm.modules.mamba_simple import Block, Mamba
+from mamba_ssm.modules.mamba_simple import Block as MambaBlock
+from mamba_ssm.modules.mamba_simple import Mamba as MambaBase
+from s4.models.s4.s4 import S4Block
 from torch import Tensor, nn
 
 try:
@@ -14,6 +16,7 @@ try:
 except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
+from .layers import IndexPool
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -23,7 +26,154 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class MambaModel(nn.Module):
+class S4(nn.Module):
+    """An S4 model.
+
+    Replicates the reference implementation from github.com/state-spaces/s4/example.py
+    """
+
+    @property
+    def d_model(self) -> int:  # noqa: D102
+        return self._d_model
+
+    @property
+    def n_vocab(self) -> int:  # noqa: D102
+        return self._n_vocab
+
+    @property
+    def n_layers(self) -> int:  # noqa: D102
+        return self._n_layers
+
+    @property
+    def dropout(self) -> float:  # noqa: D102
+        return self._dropout
+
+    @property
+    def norm_first(self) -> bool:  # noqa: D102
+        return self._norm_first
+
+    @property
+    def lr(self) -> bool:  # noqa: D102
+        return self._lr
+
+    @property
+    def num_parameters(self) -> int:  # noqa: D102
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
+    def __init__(
+        self,
+        d_model: int,
+        n_vocab: int,
+        n_layers: int,
+        dropout: float,
+        norm_first: bool,
+        lr: float | None = None,
+    ):
+        """Initialize an S4 module.
+
+        Args:
+            d_model (int): The model dimension.
+            n_vocab (int): The vocabulary size.
+            n_layers (int): The number of layers.
+            dropout (float): The dropout rate.
+            norm_first (bool): Whether to apply normalization before or after the mixer.
+            lr (float, optional): The learning rate. Defaults to None.
+        """
+        self._d_model = d_model
+        self._n_vocab = n_vocab
+        self._n_layers = n_layers
+        self._dropout = dropout
+        self._norm_first = norm_first
+        self._lr = lr
+
+        self.embedding = nn.Embedding(n_vocab, d_model)
+
+        # Stack S4 layers as residual blocks
+        self.s4_layers = nn.ModuleList()
+        self.norms = nn.ModuleList()
+        self.drouputs = nn.ModuleList()
+        for _ in range(n_layers):
+            self.s4_layers.append(
+                S4Block(d_model, dropout=dropout, transposed=True, lr=min(0.001, lr))
+            )
+            self.norms.append(nn.LayerNorm(d_model))
+            self.drouputs.append(nn.Dropout(dropout))
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Perform the forward pass."""
+        x = self.embedding(x)
+        x = x.transpose(-1, -2)
+
+        for layer, norm, dropout in zip(self.s4_layers, self.norms, self.drouputs):
+            z = x
+            if self.norm_first:
+                z = norm(z.transpose(-1, -2)).transpose(-1, -2)
+
+            z, _ = layer(z)
+            z = dropout(z)
+            x = z + x
+
+            if not self.norm_first:
+                x = norm(x.transpose(-1, -2)).transpose(-1, -2)
+
+        x = x.transpose(-1, -2)
+        return x
+
+
+class S4SequenceClassifier(S4):
+    """An S4 model with a sequence classification head."""
+
+    @property
+    def cl_dim(self) -> int:  # noqa: D102
+        return self._cl_dim
+
+    @property
+    def cl_index(self) -> int:  # noqa: D102
+        return self._cl_index
+
+    def __init__(self, cl_dim: int, cl_index: int, **kwargs: dict):  # noqa: D107
+        super().__init__(**kwargs)
+
+        self._cl_dim = cl_dim
+        self._cl_index = cl_index
+
+        self.cl_head = nn.Sequential(
+            IndexPool(dim=cl_dim, index=cl_index),
+            nn.Linear(
+                self.d_model,
+                self.n_vocab,
+                self.bias,
+            ),
+        )
+
+        for _, p in self.cl_head.named_parameters():
+            p = p * self.weight_scale
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Perform the forward pass."""
+        x = super().forward(x)
+        x = self.cl_head(x)
+        return x
+
+
+class S4TokenClassifier(S4):
+    """An S4 model with a token classification head."""
+
+    def __init__(self, **kwargs):  # noqa: D107
+        super().__init__(**kwargs)
+        self.cl_head = nn.Linear(self.d_model, self.n_vocab, self.bias)
+
+        for _, p in self.cl_head.named_parameters():
+            p = p * self.weight_scale
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Perform the forward pass."""
+        x = super().forward(x)
+        x = self.cl_head(x)
+        return x
+
+
+class Mamba(nn.Module):
     """A Mamba model."""
 
     @property
@@ -63,6 +213,10 @@ class MambaModel(nn.Module):
         return self._dropout
 
     @property
+    def weight_scale(self) -> float:  # noqa: D102
+        return self._weight_scale
+
+    @property
     def num_parameters(self) -> int:  # noqa: D102
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
@@ -75,9 +229,10 @@ class MambaModel(nn.Module):
         layer_norm_eps: float = 1e-5,
         fused_add_norm: bool = False,
         residual_in_fp32: bool = False,
-        initializer_cfg=None,
+        initializer_cfg: dict = None,
         bias: bool = False,
         dropout: float = 0.1,
+        weight_scale: float = 1.0,
     ):
         """Initialize a bare Mamba module."""
         super().__init__()
@@ -91,6 +246,7 @@ class MambaModel(nn.Module):
         self._n_vocab = n_vocab
         self._bias = bias
         self._dropout = dropout
+        self._weight_scale = weight_scale
 
         self.embedding = nn.Embedding(n_vocab, d_model)
 
@@ -100,7 +256,7 @@ class MambaModel(nn.Module):
 
         self.layers = nn.ModuleList(
             [
-                MambaModel.create_block(
+                Mamba.create_block(
                     d_model=d_model,
                     ssm_cfg=None,
                     norm_epsilon=layer_norm_eps,
@@ -124,6 +280,9 @@ class MambaModel(nn.Module):
                 **(initializer_cfg if initializer_cfg is not None else {}),
             )
         )
+
+        for _, p in self.named_parameters():
+            p = p * weight_scale
 
     def forward(self, x: Tensor, inference_params=None) -> Tensor:
         """Perform the forward pass."""
@@ -162,9 +321,9 @@ class MambaModel(nn.Module):
         """Create a Mamba block."""
         if ssm_cfg is None:
             ssm_cfg = {}
-        mixer_cls = partial(Mamba, layer_idx=layer_idx, **ssm_cfg)
+        mixer_cls = partial(MambaBase, layer_idx=layer_idx, **ssm_cfg)
         norm_cls = partial(nn.LayerNorm if not rms_norm else RMSNorm, eps=norm_epsilon)
-        block = Block(
+        block = MambaBlock(
             d_model,
             mixer_cls,
             norm_cls=norm_cls,
@@ -175,12 +334,51 @@ class MambaModel(nn.Module):
         return block
 
 
-class MambaTokenClassifier(MambaModel):
+class MambaSequenceClassifier(Mamba):
+    """A Mamba model with a sequence classification head."""
+
+    @property
+    def cl_dim(self) -> int:  # noqa: D102
+        return self._cl_dim
+
+    @property
+    def cl_index(self) -> int:  # noqa: D102
+        return self._cl_index
+
+    def __init__(self, cl_dim: int, cl_index: int, **kwargs: dict):  # noqa: D107
+        super().__init__(**kwargs)
+
+        self._cl_dim = cl_dim
+        self._cl_index = cl_index
+
+        self.cl_head = nn.Sequential(
+            IndexPool(dim=cl_dim, index=cl_index),
+            nn.Linear(
+                self.d_model,
+                self.n_vocab,
+                self.bias,
+            ),
+        )
+
+        for _, p in self.cl_head.named_parameters():
+            p = p * self.weight_scale
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Perform the forward pass."""
+        x = super().forward(x)
+        x = self.cl_head(x)
+        return x
+
+
+class MambaTokenClassifier(Mamba):
     """A Mamba model with a token classification head."""
 
     def __init__(self, **kwargs):  # noqa: D107
         super().__init__(**kwargs)
         self.cl_head = nn.Linear(self.d_model, self.n_vocab, self.bias)
+
+        for _, p in self.cl_head.named_parameters():
+            p = p * self.weight_scale
 
     def forward(self, x: Tensor) -> Tensor:
         """Perform the forward pass."""
