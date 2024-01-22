@@ -95,7 +95,7 @@ class MambaModel(nn.Module):
                 MambaModel.create_block(
                     d_model=d_model,
                     ssm_cfg=None,
-                    norm_episilon=layer_norm_eps,
+                    norm_epsilon=layer_norm_eps,
                     residual_in_fp32=residual_in_fp32,
                     rms_norm=rms_norm,
                     fused_add_norm=fused_add_norm,
