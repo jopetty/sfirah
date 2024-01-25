@@ -10,17 +10,20 @@ python = "^3.10"
 torch = "^2.0"
 numpy = ">=1.25"
 tqdm = "^4.66"
-packaging = "^23.2"
-causal-conv1d = "^1.1"
-mamba-ssm = ">1.0"
-s4torch = { git = "https://github.com/TariqAHassan/s4torch" }
+packaging = { version = "^23.2", optional = true }
+causal-conv1d =  { version = "^1.1", optional = true }
+mamba-ssm = { version = ">1.0", optional = true }
+s4torch = { git = "https://github.com/TariqAHassan/s4torch", optional = true }
+
+[tool.poetry.extras]
+ssm = ["packaging", "causal-conv1d", "mamba-ssm", "s4torch"]
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^3.4"
 python-dotenv = "^1.0"
 
 [build-system]
-requires = ["poetry-core", "packaging", "wheel"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
