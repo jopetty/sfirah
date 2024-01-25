@@ -113,7 +113,7 @@ class SRN(nn.Module):
         if h is None:
             h = x.new_zeros(self.n_layers, x.size(0), self.d_hidden)
 
-        x, h = self.rnn(input=x, h_0=h)
+        x, h = self.rnn(input=x, hx=h)
         return x, h
 
 
