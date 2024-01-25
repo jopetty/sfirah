@@ -10,9 +10,10 @@ python = "^3.10"
 torch = "^2.0"
 numpy = ">=1.25"
 tqdm = "^4.66"
+packaging = "^23.2"
 causal-conv1d = "^1.1"
 mamba-ssm = ">1.0"
-"s4@git+https://github.com/state-spaces/s4" = "^4.1"
+s4torch = { git = "https://github.com/TariqAHassan/s4torch" }
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^3.4"

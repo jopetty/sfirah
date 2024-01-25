@@ -8,7 +8,7 @@ from typing import Any
 from mamba_ssm.models.mixer_seq_simple import _init_weights
 from mamba_ssm.modules.mamba_simple import Block as MambaBlock
 from mamba_ssm.modules.mamba_simple import Mamba as MambaBase
-from s4.models.s4.s4 import S4Block
+from s4torch import S4Block
 from torch import Tensor, nn
 
 try:
@@ -17,6 +17,7 @@ except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
 from .layers import IndexPool
+from .utils import get_activation
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -31,6 +32,10 @@ class S4(nn.Module):
 
     Replicates the reference implementation from github.com/state-spaces/s4/example.py
     """
+
+    @property
+    def bias(self) -> bool:  # noqa: D102
+        return self._bias
 
     @property
     def d_model(self) -> int:  # noqa: D102
@@ -63,60 +68,65 @@ class S4(nn.Module):
     def __init__(
         self,
         d_model: int,
+        d_ssm: int,
         n_vocab: int,
         n_layers: int,
         dropout: float,
         norm_first: bool,
+        max_seq_len: int,
+        activation: str,
+        bias: bool,
         lr: float | None = None,
+        pooling: nn.AvgPool1d | nn.MaxPool1d | None = None,
     ):
         """Initialize an S4 module.
 
         Args:
+            activation (str): The activation function.
+            bias (bool): Whether to use bias.
+            dropout (float): The dropout rate.
             d_model (int): The model dimension.
+            d_ssm (int): The state-space model dimension.
+            max_seq_len (int): The maximum sequence length.
             n_vocab (int): The vocabulary size.
             n_layers (int): The number of layers.
-            dropout (float): The dropout rate.
+            pooling (nn.AvgPool1d | nn.MaxPool1d | None): The pooling layer.
             norm_first (bool): Whether to apply normalization before or after the mixer.
             lr (float, optional): The learning rate. Defaults to None.
         """
         self._d_model = d_model
+        self._d_ssm = d_ssm
         self._n_vocab = n_vocab
         self._n_layers = n_layers
         self._dropout = dropout
         self._norm_first = norm_first
         self._lr = lr
+        self._max_seq_len = max_seq_len
+        self._activation = activation
+        self._pooling = pooling
+        self._bias = bias
 
         self.embedding = nn.Embedding(n_vocab, d_model)
 
-        # Stack S4 layers as residual blocks
-        self.s4_layers = nn.ModuleList()
-        self.norms = nn.ModuleList()
-        self.drouputs = nn.ModuleList()
-        for _ in range(n_layers):
-            self.s4_layers.append(
-                S4Block(d_model, dropout=dropout, transposed=True, lr=min(0.001, lr))
-            )
-            self.norms.append(nn.LayerNorm(d_model))
-            self.drouputs.append(nn.Dropout(dropout))
+        self.blocks = nn.ModuleList(
+            [
+                S4Block(
+                    d_model=d_model,
+                    n=d_ssm,
+                    l_max=max_seq_len,
+                    activation=get_activation(activation),
+                    norm_type="layer",
+                    norm_strategy="pre" if norm_first else "post",
+                    pooling=pooling,
+                )
+            ]
+        )
 
     def forward(self, x: Tensor) -> Tensor:
         """Perform the forward pass."""
         x = self.embedding(x)
-        x = x.transpose(-1, -2)
-
-        for layer, norm, dropout in zip(self.s4_layers, self.norms, self.drouputs):
-            z = x
-            if self.norm_first:
-                z = norm(z.transpose(-1, -2)).transpose(-1, -2)
-
-            z, _ = layer(z)
-            z = dropout(z)
-            x = z + x
-
-            if not self.norm_first:
-                x = norm(x.transpose(-1, -2)).transpose(-1, -2)
-
-        x = x.transpose(-1, -2)
+        for block in self.blocks:
+            x = block(x)
         return x
 
 
