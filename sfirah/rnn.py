@@ -62,7 +62,7 @@ class SRN(nn.Module):
         activation: str,
         batch_first: bool,
         bias: bool,
-        dropout: float,
+        dropout: float | None,
         d_embedding: int,
         d_hidden: int,
         n_layers: int,
@@ -75,7 +75,7 @@ class SRN(nn.Module):
             activation (str): The activation function.
             batch_first (bool): Whether the batch is first.
             bias (bool): Whether to use bias.
-            dropout (float): The dropout rate.
+            dropout (float | None): The dropout rate.
             d_embedding (int): The embedding dimension.
             d_hidden (int): The hidden dimension.
             n_layers (int): The number of layers.
