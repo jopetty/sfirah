@@ -206,7 +206,6 @@ class GRU(nn.Module):
 
     def __init__(
         self,
-        activation: str,
         batch_first: bool,
         bias: bool,
         dropout: float | None,
@@ -219,7 +218,6 @@ class GRU(nn.Module):
         """Initialize a GRU.
 
         Args:
-            activation (str): The activation function.
             batch_first (bool): Whether the batch is first.
             bias (bool): Whether to use bias.
             dropout (float | None): The dropout rate.
@@ -230,7 +228,6 @@ class GRU(nn.Module):
             weight_scale (float): The weight scale.
 
         """
-        self._activation = activation
         self._batch_first = batch_first
         self._bias = bias
         self._dropout = dropout
@@ -251,7 +248,6 @@ class GRU(nn.Module):
             batch_first=batch_first,
             bias=bias,
             bidirectional=False,
-            nonlinearity=activation,
         )
 
         # TODO: weight sharing
