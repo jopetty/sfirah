@@ -428,7 +428,7 @@ class LSTMSequenceClassifier(LSTM):
         self, x: Tensor, h: Tensor | None = None, c: Tensor | None = None
     ) -> Tensor:
         """Perform the forward pass."""
-        x, _ = super().forward(x=x, hx=(h, c))
+        x, _ = super().forward(x=x, h=h, c=c)
         x = self.cl_head(x)
         return x
 
@@ -448,6 +448,6 @@ class LSTMTokenClassifier(LSTM):
         self, x: Tensor, h: Tensor | None = None, c: Tensor | None = None
     ) -> Tensor:
         """Perform the forward pass."""
-        x, _ = super().forward(x=x, hc=(h, c))
+        x, _ = super().forward(x=x, h=h, c=c)
         x = self.cl_head(x)
         return x
