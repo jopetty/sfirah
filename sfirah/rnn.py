@@ -104,6 +104,7 @@ class SRN(nn.Module):
             batch_first=batch_first,
             bias=bias,
             bidirectional=False,
+            nonlinearity=activation,
         )
 
         # TODO: weight sharing
@@ -250,6 +251,7 @@ class GRU(nn.Module):
             batch_first=batch_first,
             bias=bias,
             bidirectional=False,
+            nonlinearity=activation,
         )
 
         # TODO: weight sharing
@@ -396,6 +398,7 @@ class LSTM(nn.Module):
             batch_first=batch_first,
             bias=bias,
             bidirectional=False,
+            nonlinearity=activation,
         )
 
         # TODO: add option for proj_size?
