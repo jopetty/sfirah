@@ -324,10 +324,6 @@ class LSTM(nn.Module):
         return self._dropout
 
     @property
-    def activation(self) -> str:  # noqa: D102
-        return self._activation
-
-    @property
     def n_vocab(self) -> int:  # noqa: D102
         return self._n_vocab
 
@@ -349,7 +345,6 @@ class LSTM(nn.Module):
 
     def __init__(
         self,
-        activation: str,
         batch_first: bool,
         bias: bool,
         dropout: float | None,
@@ -362,7 +357,6 @@ class LSTM(nn.Module):
         """Initialize an LSTM.
 
         Args:
-            activation (str): The activation function.
             batch_first (bool): Whether the batch is first.
             bias (bool): Whether to use bias.
             dropout (float | None): The dropout rate.
@@ -373,7 +367,6 @@ class LSTM(nn.Module):
             weight_scale (float): The weight scale.
 
         """
-        self._activation = activation
         self._batch_first = batch_first
         self._bias = bias
         self._dropout = dropout
@@ -394,7 +387,6 @@ class LSTM(nn.Module):
             batch_first=batch_first,
             bias=bias,
             bidirectional=False,
-            nonlinearity=activation,
         )
 
         # TODO: add option for proj_size?
