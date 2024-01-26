@@ -111,7 +111,7 @@ class SRN(nn.Module):
         for _, p in self.named_parameters():
             p = p * weight_scale
 
-    def forward(self, x: Tensor, h: Tensor | None = None) -> Tensor:
+    def forward(self, x: Tensor, h: Tensor | None = None) -> (Tensor, Tensor):
         """Forward pass."""
         x = self.embedding(x)
 
@@ -135,11 +135,11 @@ class SRNSequenceClassifier(SRN):
         for _, p in self.cl_head.named_parameters():
             p = p * self.weight_scale
 
-    def forward(self, x: Tensor, h: Tensor | None = None):
+    def forward(self, x: Tensor, h: Tensor | None = None) -> Tensor:
         """Perform the forward pass."""
-        x, h = super().forward(x=x, h=h)
+        x, _ = super().forward(x=x, h=h)
         x = self.cl_head(x)
-        return x, h
+        return x
 
 
 class SRNTokenClassifier(SRN):
@@ -153,11 +153,11 @@ class SRNTokenClassifier(SRN):
         for _, p in self.cl_head.named_parameters():
             p = p * self.weight_scale
 
-    def forward(self, x: Tensor, h: Tensor | None = None):
+    def forward(self, x: Tensor, h: Tensor | None = None) -> Tensor:
         """Perform the forward pass."""
-        x, h = super().forward(x=x, h=h)
+        x, _ = super().forward(x=x, h=h)
         x = self.cl_head(x)
-        return x, h
+        return x
 
 
 class GRU(nn.Module):
@@ -257,7 +257,7 @@ class GRU(nn.Module):
         for _, p in self.named_parameters():
             p = p * weight_scale
 
-    def forward(self, x: Tensor, h: Tensor | None = None) -> Tensor:
+    def forward(self, x: Tensor, h: Tensor | None = None) -> (Tensor, Tensor):
         """Forward pass."""
         x = self.embedding(x)
 
@@ -281,11 +281,11 @@ class GRUSequenceClassifier(GRU):
         for _, p in self.cl_head.named_parameters():
             p = p * self.weight_scale
 
-    def forward(self, x: Tensor, h: Tensor | None = None):
+    def forward(self, x: Tensor, h: Tensor | None = None) -> Tensor:
         """Perform the forward pass."""
-        x, h = super().forward(x=x, h=h)
+        x, _ = super().forward(x=x, h=h)
         x = self.cl_head(x)
-        return x, h
+        return x
 
 
 class GRUTokenClassifier(GRU):
@@ -299,11 +299,11 @@ class GRUTokenClassifier(GRU):
         for _, p in self.cl_head.named_parameters():
             p = p * self.weight_scale
 
-    def forward(self, x: Tensor, h: Tensor | None = None):
+    def forward(self, x: Tensor, h: Tensor | None = None) -> Tensor:
         """Perform the forward pass."""
-        x, h = super().forward(x=x, h=h)
+        x, _ = super().forward(x=x, h=h)
         x = self.cl_head(x)
-        return x, h
+        return x
 
 
 class LSTM(nn.Module):
@@ -406,7 +406,7 @@ class LSTM(nn.Module):
 
     def forward(
         self, x: Tensor, h: Tensor | None = None, c: Tensor | None = None
-    ) -> Tensor:
+    ) -> (Tensor, (Tensor, Tensor)):
         """Forward pass."""
         x = self.embedding(x)
 
@@ -433,11 +433,13 @@ class LSTMSequenceClassifier(LSTM):
         for _, p in self.cl_head.named_parameters():
             p = p * self.weight_scale
 
-    def forward(self, x: Tensor, h: Tensor | None = None, c: Tensor | None = None):
+    def forward(
+        self, x: Tensor, h: Tensor | None = None, c: Tensor | None = None
+    ) -> Tensor:
         """Perform the forward pass."""
-        x, hc = super().forward(x=x, hx=(h, c))
+        x, _ = super().forward(x=x, hx=(h, c))
         x = self.cl_head(x)
-        return x, hc
+        return x
 
 
 class LSTMTokenClassifier(LSTM):
@@ -451,8 +453,10 @@ class LSTMTokenClassifier(LSTM):
         for _, p in self.cl_head.named_parameters():
             p = p * self.weight_scale
 
-    def forward(self, x: Tensor, h: Tensor | None = None, c: Tensor | None = None):
+    def forward(
+        self, x: Tensor, h: Tensor | None = None, c: Tensor | None = None
+    ) -> Tensor:
         """Perform the forward pass."""
-        x, hc = super().forward(x=x, hc=(h, c))
+        x, _ = super().forward(x=x, hc=(h, c))
         x = self.cl_head(x)
-        return x, hc
+        return x
