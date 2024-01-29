@@ -8,7 +8,6 @@ from typing import Any
 from mamba_ssm.models.mixer_seq_simple import _init_weights
 from mamba_ssm.modules.mamba_simple import Block as MambaBlock
 from mamba_ssm.modules.mamba_simple import Mamba as MambaBase
-from s4torch import S4Block
 from torch import Tensor, nn
 
 try:
@@ -17,7 +16,6 @@ except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
 from .layers import IndexPool
-from .utils import get_activation
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -25,162 +23,6 @@ logging.basicConfig(
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
-
-
-class S4(nn.Module):
-    """An S4 model.
-
-    Replicates the reference implementation from github.com/state-spaces/s4/example.py
-    """
-
-    @property
-    def bias(self) -> bool:  # noqa: D102
-        return self._bias
-
-    @property
-    def d_model(self) -> int:  # noqa: D102
-        return self._d_model
-
-    @property
-    def n_vocab(self) -> int:  # noqa: D102
-        return self._n_vocab
-
-    @property
-    def n_layers(self) -> int:  # noqa: D102
-        return self._n_layers
-
-    @property
-    def dropout(self) -> float:  # noqa: D102
-        return self._dropout
-
-    @property
-    def norm_first(self) -> bool:  # noqa: D102
-        return self._norm_first
-
-    @property
-    def lr(self) -> bool:  # noqa: D102
-        return self._lr
-
-    @property
-    def num_parameters(self) -> int:  # noqa: D102
-        return sum(p.numel() for p in self.parameters() if p.requires_grad)
-
-    def __init__(
-        self,
-        d_model: int,
-        d_ssm: int,
-        n_vocab: int,
-        n_layers: int,
-        dropout: float,
-        norm_first: bool,
-        max_seq_len: int,
-        activation: str,
-        bias: bool,
-        lr: float | None = None,
-        pooling: nn.AvgPool1d | nn.MaxPool1d | None = None,
-    ):
-        """Initialize an S4 module.
-
-        Args:
-            activation (str): The activation function.
-            bias (bool): Whether to use bias.
-            dropout (float): The dropout rate.
-            d_model (int): The model dimension.
-            d_ssm (int): The state-space model dimension.
-            max_seq_len (int): The maximum sequence length.
-            n_vocab (int): The vocabulary size.
-            n_layers (int): The number of layers.
-            pooling (nn.AvgPool1d | nn.MaxPool1d | None): The pooling layer.
-            norm_first (bool): Whether to apply normalization before or after the mixer.
-            lr (float, optional): The learning rate. Defaults to None.
-        """
-        self._d_model = d_model
-        self._d_ssm = d_ssm
-        self._n_vocab = n_vocab
-        self._n_layers = n_layers
-        self._dropout = dropout
-        self._norm_first = norm_first
-        self._lr = lr
-        self._max_seq_len = max_seq_len
-        self._activation = activation
-        self._pooling = pooling
-        self._bias = bias
-
-        self.embedding = nn.Embedding(n_vocab, d_model)
-
-        self.blocks = nn.ModuleList(
-            [
-                S4Block(
-                    d_model=d_model,
-                    n=d_ssm,
-                    l_max=max_seq_len,
-                    activation=get_activation(activation),
-                    norm_type="layer",
-                    norm_strategy="pre" if norm_first else "post",
-                    pooling=pooling,
-                )
-            ]
-        )
-
-    def forward(self, x: Tensor) -> Tensor:
-        """Perform the forward pass."""
-        x = self.embedding(x)
-        for block in self.blocks:
-            x = block(x)
-        return x
-
-
-class S4SequenceClassifier(S4):
-    """An S4 model with a sequence classification head."""
-
-    @property
-    def cl_dim(self) -> int:  # noqa: D102
-        return self._cl_dim
-
-    @property
-    def cl_index(self) -> int:  # noqa: D102
-        return self._cl_index
-
-    def __init__(self, cl_dim: int, cl_index: int, **kwargs: dict):  # noqa: D107
-        super().__init__(**kwargs)
-
-        self._cl_dim = cl_dim
-        self._cl_index = cl_index
-
-        self.cl_head = nn.Sequential(
-            IndexPool(dim=cl_dim, index=cl_index),
-            nn.Linear(
-                self.d_model,
-                self.n_vocab,
-                self.bias,
-            ),
-        )
-
-        for _, p in self.cl_head.named_parameters():
-            p = p * self.weight_scale
-
-    def forward(self, x: Tensor) -> Tensor:
-        """Perform the forward pass."""
-        x = super().forward(x)
-        x = self.cl_head(x)
-        return x
-
-
-class S4TokenClassifier(S4):
-    """An S4 model with a token classification head."""
-
-    def __init__(self, **kwargs):  # noqa: D107
-        super().__init__(**kwargs)
-        self.cl_head = nn.Linear(self.d_model, self.n_vocab, self.bias)
-
-        for _, p in self.cl_head.named_parameters():
-            p = p * self.weight_scale
-
-    def forward(self, x: Tensor) -> Tensor:
-        """Perform the forward pass."""
-        x = super().forward(x)
-        x = self.cl_head(x)
-        return x
 
 
 class Mamba(nn.Module):
