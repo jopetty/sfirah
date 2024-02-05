@@ -236,12 +236,12 @@ class EncoderSequenceClassifier(Transformer):
     classification.
     """
 
-    def __init__(self, cl_dim: int, cl_index: int, **kwargs: dict):
+    def __init__(self, cl_dim: int, cl_index: int | None, **kwargs: dict):
         """Initialize the EncoderSequenceClassifier.
 
         Args:
             cl_dim (int): The dimension to pool.
-            cl_index (int): The index to pool.
+            cl_index (int | None): The index to pool.
             **kwargs (dict): Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -264,6 +264,7 @@ class EncoderSequenceClassifier(Transformer):
         mask: Tensor | None = None,
         src_key_padding_mask: Tensor | None = None,
         is_causal: bool = False,
+        index: Tensor | None = None,
     ) -> torch.Tensor:
         """Perform the forward pass.
 
@@ -272,6 +273,7 @@ class EncoderSequenceClassifier(Transformer):
             mask (Tensor | None): The attention mask.
             src_key_padding_mask (Tensor | None): The source key padding mask.
             is_causal (bool): Whether the attention is causal.
+            index (Tensor | None): The index to pool.
         """
         x = super().forward(
             x,
@@ -279,7 +281,7 @@ class EncoderSequenceClassifier(Transformer):
             src_key_padding_mask=src_key_padding_mask,
             is_causal=is_causal,
         )
-        x = self.cl_head(x)
+        x = self.cl_head(x, index=index)
         return x
 
 
