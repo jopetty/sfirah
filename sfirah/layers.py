@@ -35,7 +35,7 @@ class AvgPool(nn.Module):
 class IndexPool(nn.Module):
     """Selects a specific index from a specified dimension."""
 
-    def __init__(self, dim: int, index: int):
+    def __init__(self, dim: int, index: int | None):
         """Initialize the IndexPool module.
 
         Args:
@@ -46,39 +46,33 @@ class IndexPool(nn.Module):
         self.dim = dim
         self.index = index
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor, index: Tensor | None) -> Tensor:
         """Perform the forward pass.
 
         Args:
             x (Tensor): The input tensor.
+            index (Tensor | None): The index to select, if not fixed.
         """
-        return x.select(dim=self.dim, index=self.index)
+        if (index is None) != (self.index is None):
+            if (index is None) and (self.index is None):
+                raise ValueError(
+                    "You must provide either a fixed index at init or "
+                    "provide an index during the forward pass."
+                )
+            else:
+                raise ValueError(
+                    "You cannot provide both a fixed index at init and "
+                    "an index during the forward pass."
+                )
+
+        if index is not None:
+            return x.gather(dim=self.dim, index=index)
+        else:
+            return x.select(dim=self.dim, index=self.index)
 
     def extra_repr(self) -> str:
         """Return the extra representation."""
-        return f"dim={self.dim}, index={self.index}"
-
-
-class VariableIndexPool(nn.Module):
-    """Selects a sequence-dependent index from a specified dimension."""
-
-    def __init__(self, dim: int):
-        """Initialize the VariableIndexPool module.
-
-        Args:
-            dim (int): The dimension to select from.
-        """
-        super().__init__()
-        self.dim = dim
-
-    def forward(self, x: Tensor, index: Tensor) -> Tensor:
-        """Perform the forward pass.
-
-        Args:
-            x (Tensor): The input tensor.
-            index (Tensor): The index to select.
-        """
-        return x.gather(dim=self.dim, index=index)
+        return f"dim={self.dim}, index={self.index if self.index is not None else '*'}"
 
 
 class SumPool(nn.Module):
