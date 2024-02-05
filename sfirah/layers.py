@@ -59,6 +59,28 @@ class IndexPool(nn.Module):
         return f"dim={self.dim}, index={self.index}"
 
 
+class VariableIndexPool(nn.Module):
+    """Selects a sequence-dependent index from a specified dimension."""
+
+    def __init__(self, dim: int):
+        """Initialize the VariableIndexPool module.
+
+        Args:
+            dim (int): The dimension to select from.
+        """
+        super().__init__()
+        self.dim = dim
+
+    def forward(self, x: Tensor, index: Tensor) -> Tensor:
+        """Perform the forward pass.
+
+        Args:
+            x (Tensor): The input tensor.
+            index (Tensor): The index to select.
+        """
+        return x.gather(dim=self.dim, index=index)
+
+
 class SumPool(nn.Module):
     """Sums over a specified dimesion."""
 
