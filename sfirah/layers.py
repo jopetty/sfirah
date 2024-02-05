@@ -4,6 +4,7 @@ These modules are similar to the nn Pooling layers in PyTorch, but
 are tailored for use in transformers.
 """
 
+import torch.nn.functional as F  # noqa: N812
 from torch import Tensor, nn
 
 
@@ -66,6 +67,8 @@ class IndexPool(nn.Module):
                 )
 
         if index is not None:
+            if x.dim() > index.dim():
+                index = F.one_hot(index, num_classes=x.shape[-1])
             return x.gather(dim=self.dim, index=index)
         else:
             return x.select(dim=self.dim, index=self.index)
