@@ -53,15 +53,13 @@ class IndexPool(nn.Module):
             x (Tensor): The input tensor.
             index (Tensor | None): The index to select, if not fixed.
         """
-        if (index is None) != (self.index is None):
+        if (index is None) == (self.index is None):
             if (index is None) and (self.index is None):
                 raise ValueError(
                     "You must provide either a fixed index at init or "
                     "provide an index during the forward pass."
                 )
             else:
-                print(self.index)
-                print(index)
                 raise ValueError(
                     "You cannot provide both a fixed index at init and "
                     "an index during the forward pass."
