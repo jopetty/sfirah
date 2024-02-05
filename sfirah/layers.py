@@ -67,8 +67,11 @@ class IndexPool(nn.Module):
                 )
 
         if index is not None:
+            print(x.shape, index.shape)
             if x.dim() > index.dim():
                 index = F.one_hot(index, num_classes=x.shape[-1])
+
+            print(x.shape, index.shape)
             return x.gather(dim=self.dim, index=index)
         else:
             return x.select(dim=self.dim, index=self.index)
