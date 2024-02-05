@@ -246,13 +246,24 @@ class EncoderSequenceClassifier(Transformer):
         """
         super().__init__(**kwargs)
 
-        self.cl_head = nn.Sequential(
-            IndexPool(dim=cl_dim, index=cl_index),
-            nn.Linear(
-                self.d_model,
-                self.n_vocab,
-                self.bias,
-            ),
+        # self.cl_head = nn.Sequential(
+        #     IndexPool(dim=cl_dim, index=cl_index),
+        #     nn.Linear(
+        #         self.d_model,
+        #         self.n_vocab,
+        #         self.bias,
+        #     ),
+        # )
+
+        self.cl_head = nn.ModuleDict(
+            {
+                "pool": IndexPool(dim=cl_dim, index=cl_index),
+                "linear": nn.Linear(
+                    self.d_model,
+                    self.n_vocab,
+                    self.bias,
+                ),
+            }
         )
 
         for _, p in self.cl_head.named_parameters():
@@ -281,7 +292,8 @@ class EncoderSequenceClassifier(Transformer):
             src_key_padding_mask=src_key_padding_mask,
             is_causal=is_causal,
         )
-        x = self.cl_head(x, index=index)
+        x = self.cl_head["pool"](x, index=index)
+        x = self.cl_head["linear"](x)
         return x
 
 
