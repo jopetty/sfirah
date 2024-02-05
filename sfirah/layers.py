@@ -4,6 +4,7 @@ These modules are similar to the nn Pooling layers in PyTorch, but
 are tailored for use in transformers.
 """
 
+import torch
 from torch import Tensor, nn
 
 
@@ -66,7 +67,12 @@ class IndexPool(nn.Module):
                 )
 
         if index is not None:
-            return x.index_select(dim=self.dim, index=index)
+            if self.dim == 1:
+                return x[torch.arange(x.size(0)), index]
+            else:
+                raise NotImplementedError(
+                    "Indexing along dimensions other than 1 is not yet supported."
+                )
         else:
             return x.select(dim=self.dim, index=self.index)
 
