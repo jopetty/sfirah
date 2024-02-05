@@ -60,6 +60,8 @@ class IndexPool(nn.Module):
                     "provide an index during the forward pass."
                 )
             else:
+                print(self.index)
+                print(index)
                 raise ValueError(
                     "You cannot provide both a fixed index at init and "
                     "an index during the forward pass."
