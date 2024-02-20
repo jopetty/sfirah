@@ -178,6 +178,7 @@ def sequence_accuracy(
 def mark_token_logprob(
     predictions: Tensor,
     targets: Tensor,
+    ignore_index: int,
     mark_tok_id: int,
 ):
     """Return the log-probability of the mark token in the prediction at the position preceding the mark token in the target."""  # noqa: E501
