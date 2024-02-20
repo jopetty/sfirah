@@ -175,6 +175,23 @@ def sequence_accuracy(
     }
 
 
+def mark_token_logprob(
+    predictions: Tensor,
+    targets: Tensor,
+    mark_tok_id: int,
+):
+    """Return the log-probability of the mark token in the prediction at the position preceding the mark token in the target."""  # noqa: E501
+    mark_indices = (targets == mark_tok_id).nonzero(as_tuple=True)[1] - 1
+    preds_at_mark = predictions[torch.arange(predictions.size(0)), mark_indices]
+    mean_preds_at_mark = preds_at_mark.mean(dim=0)
+    mark_tok_logprob = mean_preds_at_mark[mark_tok_id].item()
+
+    return {
+        "value": mark_tok_logprob,
+        "n_samples": targets.size(0),
+    }
+
+
 def compute_metrics(
     batch: list[(Tensor, Tensor)],
     pad_token_id: int,
