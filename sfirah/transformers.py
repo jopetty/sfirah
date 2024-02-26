@@ -447,7 +447,7 @@ class GenerativeDecoder:
 
         for i in range(k):
             idx = indices[i]
-            token = tokenizer.decode(idx)
+            token = tokenizer.decode([idx])[0]
             completions[token] = probs[idx].item()
 
         return completions
