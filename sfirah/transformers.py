@@ -351,11 +351,13 @@ class CausalDecoder(Transformer):
     def block_size(self) -> int:  # noqa: D102
         return self._block_size
 
-    def __init__(self, block_size: int, **kwargs):
+    def __init__(self, block_size: int, tie_embeddings: bool = True, **kwargs):
         """Initialize the CausalDecoder.
 
         Args:
             block_size (int): The size of the context window.
+            tie_embeddings (bool): Whether to tie the embedding weights.
+                Defaults to True.
             **kwargs (dict): Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -365,6 +367,11 @@ class CausalDecoder(Transformer):
             self.n_vocab,
             bias=self.bias,
         )
+
+        # Reduces size of model file; for large vocabs, this can be significant.
+        # Also means embedding get stronger gradients.
+        if tie_embeddings:
+            self.lm_head.weight = self.embedding[0].weight
 
         for _, p in self.lm_head.named_parameters():
             p = p * kwargs["weight_scale"]
