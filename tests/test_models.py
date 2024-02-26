@@ -184,5 +184,38 @@ class TestCausalDecoder(unittest.TestCase):  # noqa: D101
         print(y)
 
 
+class TestGPT(unittest.TestCase):  # noqa: D101
+    def test_init(self):  # noqa: D102
+        _ = transformers.GPT(
+            bias=False,
+            block_size=128,
+            d_model=10,
+            d_ff=20,
+            dropout=0.1,
+            n_layers=2,
+            n_heads=2,
+            n_vocab=30,
+        )
+
+    def test_generate(self):  # noqa: D102
+        model = transformers.GPT(
+            bias=False,
+            block_size=128,
+            d_model=10,
+            d_ff=20,
+            dropout=0.1,
+            n_layers=2,
+            n_heads=2,
+            n_vocab=30,
+        )
+
+        x = torch.ones([1, 11], dtype=torch.int64)
+
+        y = model.generate(x, max_length=21, temperature=0.0, eos_token_id=5)
+
+        print(x)
+        print(y)
+
+
 if __name__ == "__main__":
     unittest.main()
