@@ -436,18 +436,15 @@ class GenerativeDecoder:
             context = context[:, -self.block_size :]
 
         logits, _ = self.forward(context)
-        top_k = torch.topk(logits, k=min(k, logits.shape[-1]))
+        probs = F.softmax(logits, dim=1).squeeze()
+        torch.topk(logits, k=min(k, logits.shape[-1]))
 
         vals, indices = torch.topk(logits, k=min(k, logits.shape[-1]))
         vals = vals.squeeze()
         indices = indices.squeeze().tolist()
 
         for i in range(k):
-            print(tokenizer.decode(indices[i]), vals[i].item())
-
-        # iterate over top_k[0] and decode
-        for i in range(k):
-            print(top_k[0][i], top_k[1][i])
+            print(tokenizer.decode(indices[i]), probs[i].item())
 
 
 class CausalDecoder(Transformer, GenerativeDecoder):
