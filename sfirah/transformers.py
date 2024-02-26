@@ -681,25 +681,40 @@ class GPT(nn.Module, GenerativeDecoder):
     def num_parameters(self) -> int:  # noqa: D102
         return self.get_num_params(non_embedding=False)
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        block_size: int,
+        bias: bool,
+        dropout: float,
+        d_model: int,
+        n_vocab: int,
+        n_layers: int,
+        n_heads: int,
+    ):
         """Initialize the GPT model.
 
         Args:
-            kwargs: Sfirah model keyword configurations. A subset of the valid options
-                for CausalDecoder.
+            block_size (int): The block size.
+            bias (bool): Whether to include bias parameters.
+            dropout (float): The dropout probability.
+            d_model (int): The model/embedding dimension.
+            n_vocab (int): The number of vocabulary items.
+            n_layers (int): The number of layers.
+            n_heads (int): The number of attention heads.
+
         """
         super().__init__()
 
         # Construct GPTConfig based on Sfirah kwargs
         gpt_config = GPTConfig(
             **{
-                "block_size": kwargs["block_size"],
-                "vocab_size": kwargs["n_vocab"],
-                "n_layer": kwargs["n_layers"],
-                "n_head": kwargs["n_heads"],
-                "n_embd": kwargs["d_model"],
-                "dropout": kwargs["dropout"],
-                "bias": kwargs["bias"],
+                "block_size": block_size,
+                "vocab_size": n_vocab,
+                "n_layer": n_layers,
+                "n_head": n_heads,
+                "n_embd": d_model,
+                "dropout": dropout,
+                "bias": bias,
             }
         )
 
