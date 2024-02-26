@@ -444,7 +444,8 @@ class GenerativeDecoder:
         indices = indices.squeeze().tolist()
 
         for i in range(k):
-            print(tokenizer.decode(indices[i]), probs[i].item())
+            idx = indices[i]
+            print(tokenizer.decode(idx), probs[idx].item())
 
 
 class CausalDecoder(Transformer, GenerativeDecoder):
