@@ -175,9 +175,8 @@ def sequence_accuracy(
     }
 
 
-# TODO: are these actually probs? or just logits
 # TODO: implement ignore_index
-def mark_token_prob(
+def mark_token_logprob(
     predictions: Tensor,
     targets: Tensor,
     ignore_index: int,
@@ -185,12 +184,20 @@ def mark_token_prob(
 ):
     """Return the probability of the mark token in the prediction at the position preceding the mark token in the target."""  # noqa: E501
     mark_indices = (targets == mark_tok_id).nonzero(as_tuple=True)[1] - 1
-    preds_at_mark = predictions[torch.arange(predictions.size(0)), mark_indices]
-    mean_preds_at_mark = preds_at_mark.mean(dim=0)
-    mark_tok_logit = mean_preds_at_mark[mark_tok_id].item()
+    preds_before_mark = predictions[torch.arange(predictions.size(0)), mark_indices]
+
+    # Calculate mean along batch dimension, i.e., the mean of what the model is
+    # predicting right before the mark token, averaged over each sequence
+    mean_preds_before_mark = preds_before_mark.mean(dim=0)
+
+    # Logits to logprobs
+    logprobs_before_mark = F.log_softmax(mean_preds_before_mark, dim=-1)
+
+    # Find the logprob of the mark token
+    mark_tok_logprob = logprobs_before_mark[mark_tok_id].item()
 
     return {
-        "value": mark_tok_logit,
+        "value": mark_tok_logprob,
         "n_samples": targets.size(0),
     }
 
