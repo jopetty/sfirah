@@ -429,9 +429,7 @@ class GenerativeDecoder:
 
     @torch.no_grad()
     def top_k_completions(  # noqa: D102
-        self,
-        context: Tensor,
-        k: int,
+        self, context: Tensor, k: int, tokenizer: Any
     ):
         seq_len = context.shape[1]
         if seq_len > self.block_size:
@@ -440,7 +438,12 @@ class GenerativeDecoder:
         logits, _ = self.forward(context)
         top_k = torch.topk(logits, k=min(k, logits.shape[-1]))
 
-        print(top_k)
+        vals, indices = torch.topk(logits, k=min(k, logits.shape[-1]))
+        vals = vals.squeeze()
+        indices = indices.squeeze().tolist()
+
+        for i in range(k):
+            print(tokenizer.decode(indices[i]), vals[i].item())
 
         # iterate over top_k[0] and decode
         for i in range(k):
