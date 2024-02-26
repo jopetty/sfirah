@@ -436,7 +436,7 @@ class GenerativeDecoder:
             context = context[:, -self.block_size :]
 
         logits, _ = self.forward(context)
-        probs = F.softmax(logits, dim=1).squeeze()
+        probs = F.softmax(logits, dim=-1).squeeze()
         torch.topk(logits, k=min(k, logits.shape[-1]))
 
         vals, indices = torch.topk(logits, k=min(k, logits.shape[-1]))
