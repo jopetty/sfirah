@@ -443,9 +443,13 @@ class GenerativeDecoder:
         vals = vals.squeeze()
         indices = indices.squeeze().tolist()
 
+        completions = {}
+
         for i in range(k):
             idx = indices[i]
-            print(tokenizer.decode(idx), probs[idx].item())
+            completions[tokenizer.decode(idx)] = probs[idx].item()
+
+        return completions
 
 
 class CausalDecoder(Transformer, GenerativeDecoder):
