@@ -411,7 +411,7 @@ class GenerativeDecoder:
                     v, _ = torch.topk(logits, k=min(top_k, logits.shape[-1]))
                     logits[logits < v[:, [-1]]] = -float("Inf")
 
-                probs = F.softmax(logits, dim=1)
+                probs = F.softmax(logits, dim=-1)
                 tok_next = torch.multinomial(probs, num_samples=1)
 
             context = torch.cat([context, tok_next], dim=-1)
