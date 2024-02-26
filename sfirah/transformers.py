@@ -369,11 +369,11 @@ class GenerativeDecoder:
             eos_token_id (int | None): The end-of-sequence token ID. Defaults to None.
             stream (bool): Whether to stream the output. Defaults to False.
         """
+        seq_len = context.shape[1]
         assert (max_new_tokens is not None) != (
             max_length is not None
         ), "You must provide either `max_length` or `max_new_tokens`."
         if max_length is not None:
-            seq_len = context.shape[1]
             max_new_tokens = max_length - seq_len
         assert max_new_tokens > 0, "Context is longer than max_length"
 
@@ -426,6 +426,23 @@ class GenerativeDecoder:
                 break
 
         return context
+
+    @torch.no_grad()
+    def top_k_completions(  # noqa: D102
+        self,
+        context: Tensor,
+        k: int,
+    ):
+        seq_len = context.shape[1]
+        if seq_len > self.block_size:
+            context = context[:, -self.block_size :]
+
+        logits, _ = self.forward(context)
+        top_k = torch.topk(logits, k=min(k, logits.shape[-1]))
+
+        # iterate over top_k[0] and decode
+        for i in range(top_k[0].shape(0)):
+            print(top_k[0][i], top_k[1][i])
 
 
 class CausalDecoder(Transformer, GenerativeDecoder):
