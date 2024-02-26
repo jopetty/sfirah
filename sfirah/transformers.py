@@ -441,7 +441,7 @@ class GenerativeDecoder:
         top_k = torch.topk(logits, k=min(k, logits.shape[-1]))
 
         # iterate over top_k[0] and decode
-        for i in range(top_k[0].shape(0)):
+        for i in range(k):
             print(top_k[0][i], top_k[1][i])
 
 

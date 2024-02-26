@@ -148,7 +148,12 @@ class TestMetrics(unittest.TestCase):  # noqa: D101
         )
 
         ground_truth = {"value": 0.1333, "n_samples": 3}
-        calculated = metrics.mark_token_logprob(predictions, targets, mark_tok_id)
+        calculated = metrics.mark_token_logprob(
+            predictions=predictions,
+            targets=targets,
+            ignore_index=0,
+            mark_tok_id=mark_tok_id,
+        )
 
         self.assertEqual(ground_truth["n_samples"], calculated["n_samples"])
         self.assertAlmostEqual(ground_truth["value"], calculated["value"], places=4)
