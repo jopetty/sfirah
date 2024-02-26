@@ -348,18 +348,18 @@ class CausalDecoder(Transformer):
     """
 
     @property
-    def context_size(self) -> int:  # noqa: D102
-        return self._context_size
+    def block_size(self) -> int:  # noqa: D102
+        return self._block_size
 
-    def __init__(self, context_size: int, **kwargs):
+    def __init__(self, block_size: int, **kwargs):
         """Initialize the CausalDecoder.
 
         Args:
-            context_size (int): The size of the context window.
+            block_size (int): The size of the context window.
             **kwargs (dict): Additional keyword arguments.
         """
         super().__init__(**kwargs)
-        self._context_size = context_size
+        self._block_size = block_size
         self.lm_head = nn.Linear(
             self.d_model,
             self.n_vocab,
@@ -441,8 +441,8 @@ class CausalDecoder(Transformer):
             )
 
         for t in range(max_new_tokens):
-            if seq_len > self.context_size:
-                context = context[:, -self.context_size :]
+            if seq_len > self.block_size:
+                context = context[:, -self.block_size :]
 
             mask = torch.nn.Transformer.generate_square_subsequent_mask(
                 context.shape[1], device=context.device

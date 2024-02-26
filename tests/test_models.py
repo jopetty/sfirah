@@ -142,7 +142,7 @@ class TestEncoderSequenceClassifier(unittest.TestCase):  # noqa: D101
 class TestCausalDecoder(unittest.TestCase):  # noqa: D101
     def test_init(self):  # noqa: D102
         _ = transformers.CausalDecoder(
-            context_size=128,
+            block_size=128,
             d_model=10,
             d_ff=20,
             dropout=0.1,
@@ -160,7 +160,7 @@ class TestCausalDecoder(unittest.TestCase):  # noqa: D101
 
     def test_generate(self):  # noqa: D102
         model = transformers.CausalDecoder(
-            context_size=128,
+            block_size=128,
             d_model=10,
             d_ff=20,
             dropout=0.1,
