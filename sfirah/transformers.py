@@ -401,7 +401,7 @@ class GenerativeDecoder:
             if seq_len > self.block_size:
                 context = context[:, -self.block_size :]
 
-            logits, _ = self.forward(context)
+            logits = self.forward(context)["logits"]
 
             if temperature == 0.0:
                 tok_next = torch.argmax(logits[:, -1, :], dim=-1).unsqueeze(-1)
@@ -435,7 +435,7 @@ class GenerativeDecoder:
         if seq_len > self.block_size:
             context = context[:, -self.block_size :]
 
-        logits, _ = self.forward(context)
+        logits = self.forward(context)["logits"]
         probs = F.softmax(logits, dim=-1).squeeze()
         torch.topk(logits, k=min(k, logits.shape[-1]))
 
