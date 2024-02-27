@@ -489,12 +489,18 @@ class CausalDecoder(Transformer, GenerativeDecoder):
         for _, p in self.lm_head.named_parameters():
             p = p * kwargs["weight_scale"]
 
-    def forward(self, input_ids: Tensor, labels: Tensor | None = None) -> Tensor:
+    def forward(
+        self,
+        input_ids: Tensor,
+        labels: Tensor | None = None,
+        attention_mask: Tensor | None = None,
+    ) -> Tensor:
         """Perform the forward pass.
 
         Args:
             input_ids (Tensor): The input tensor.
             labels (Tensor | None): The target tensor, if any targets are present.
+            attention_mask (Tensor | None): The attention mask.
         """
         causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(
             input_ids.shape[1], device=input_ids.device
