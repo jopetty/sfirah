@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 
+import numpy as np
 import torch
 from torch import Tensor
 from torch.nn import functional as F  # noqa: N812
@@ -211,7 +212,7 @@ def mark_token_prob(
     """Return the probability of the mark token in the prediction at the position preceding the mark token in the target."""  # noqa: E501
     log_prob_dict = mark_token_logprob(predictions, targets, ignore_index, mark_tok_id)
     return {
-        "value": torch.exp(log_prob_dict["value"]),
+        "value": np.exp(log_prob_dict["value"]),
         "n_samples": log_prob_dict["n_samples"],
     }
 
