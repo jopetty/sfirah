@@ -182,7 +182,7 @@ def mark_token_logprob(
     ignore_index: int,
     mark_tok_id: int,
 ):
-    """Return the probability of the mark token in the prediction at the position preceding the mark token in the target."""  # noqa: E501
+    """Return the logprob of the mark token in the prediction at the position preceding the mark token in the target."""  # noqa: E501
     mark_indices = (targets == mark_tok_id).nonzero(as_tuple=True)[1] - 1
     preds_before_mark = predictions[torch.arange(predictions.size(0)), mark_indices]
 
@@ -199,6 +199,20 @@ def mark_token_logprob(
     return {
         "value": mark_tok_logprob,
         "n_samples": targets.size(0),
+    }
+
+
+def mark_token_prob(
+    predictions: Tensor,
+    targets: Tensor,
+    ignore_index: int,
+    mark_tok_id: int,
+):
+    """Return the probability of the mark token in the prediction at the position preceding the mark token in the target."""  # noqa: E501
+    log_prob_dict = mark_token_logprob(predictions, targets, ignore_index, mark_tok_id)
+    return {
+        "value": torch.exp(log_prob_dict["value"]),
+        "n_samples": log_prob_dict["n_samples"],
     }
 
 
