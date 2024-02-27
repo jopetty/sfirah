@@ -489,28 +489,28 @@ class CausalDecoder(Transformer, GenerativeDecoder):
         for _, p in self.lm_head.named_parameters():
             p = p * kwargs["weight_scale"]
 
-    def forward(self, idx: Tensor, targets: Tensor | None = None) -> Tensor:
+    def forward(self, input_ids: Tensor, labels: Tensor | None = None) -> Tensor:
         """Perform the forward pass.
 
         Args:
-            idx (Tensor): The input tensor.
-            targets (Tensor | None): The target tensor, if any targets are present.
+            input_ids (Tensor): The input tensor.
+            labels (Tensor | None): The target tensor, if any targets are present.
         """
         causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(
-            idx.shape[1], device=idx.device
+            input_ids.shape[1], device=input_ids.device
         )
 
         x = super().forward(
-            idx,
+            input_ids,
             mask=causal_mask,
             src_key_padding_mask=None,
             is_causal=True,
         )
 
-        if targets is not None:
+        if labels is not None:
             logits = self.lm_head(x)
             loss = F.cross_entropy(
-                logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1
+                logits.view(-1, logits.size(-1)), labels.view(-1), ignore_index=-1
             )
         else:
             # inference-time mini-optimization: only forward the lm_head on
@@ -520,7 +520,10 @@ class CausalDecoder(Transformer, GenerativeDecoder):
             )  # note: using list [-1] to preserve the time dim
             loss = None
 
-        return logits, loss
+        return {
+            "logits": logits,
+            "loss": loss,
+        }
 
 
 # Mark: NanoGPT (karpathy)
@@ -799,9 +802,9 @@ class GPT(nn.Module, GenerativeDecoder):
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    def forward(self, idx, targets=None):  # noqa: D102
-        device = idx.device
-        _, t = idx.size()
+    def forward(self, input_ids, labels=None):  # noqa: D102
+        device = input_ids.device
+        _, t = input_ids.size()
         assert t <= self.config.block_size, (
             f"Cannot forward sequence of length {t}, block size is only "
             f"{self.config.block_size}"
@@ -809,18 +812,20 @@ class GPT(nn.Module, GenerativeDecoder):
         pos = torch.arange(0, t, dtype=torch.long, device=device)  # shape (t)
 
         # forward the GPT model itself
-        tok_emb = self.transformer.wte(idx)  # token embeddings of shape (b, t, n_embd)
+        tok_emb = self.transformer.wte(
+            input_ids
+        )  # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos)  # position embeddings of shape (t, n_embd)
         x = self.transformer.drop(tok_emb + pos_emb)
         for block in self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)
 
-        if targets is not None:
+        if labels is not None:
             # if we are given some desired targets also calculate the loss
             logits = self.lm_head(x)
             loss = F.cross_entropy(
-                logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1
+                logits.view(-1, logits.size(-1)), labels.view(-1), ignore_index=-1
             )
         else:
             # inference-time mini-optimization: only forward the lm_head on the
@@ -830,7 +835,10 @@ class GPT(nn.Module, GenerativeDecoder):
             )  # note: using list [-1] to preserve the time dim
             loss = None
 
-        return logits, loss
+        return {
+            "logits": logits,
+            "loss": loss,
+        }
 
     def crop_block_size(self, block_size):  # noqa: D102
         # model surgery to decrease the block size if necessary
