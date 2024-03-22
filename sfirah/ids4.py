@@ -87,6 +87,10 @@ class IDS4TokenClassifier(nn.Module):
         return self._bias
 
     @property
+    def prenorm(self) -> bool:  # noqa: D102
+        return self._prenorm
+
+    @property
     def num_parameters(self) -> int:
         """Return the total number of trainable parameters."""
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
@@ -99,6 +103,7 @@ class IDS4TokenClassifier(nn.Module):
         n_vocab: int,
         dropout: float,
         bias: bool = True,
+        prenorm: bool = False,
     ):
         super().__init__()
 
@@ -108,6 +113,7 @@ class IDS4TokenClassifier(nn.Module):
         self._d_state = d_state
         self._n_layers = n_layers
         self._dropout = dropout
+        self._prenorm = prenorm
 
         self.embedding = nn.Embedding(self.n_vocab, self.d_model)
         self.s4_layers = nn.ModuleList()
