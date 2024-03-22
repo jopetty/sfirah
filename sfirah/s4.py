@@ -3,6 +3,7 @@
 
 import logging
 
+from s4.models.s4.s4 import S4Block
 from s4.models.s4.s4d import S4D
 from torch import Tensor, nn
 
@@ -16,6 +17,102 @@ logger = logging.getLogger(__name__)
 
 class S4TokenClassifier(nn.Module):
     """S4 Token Classifier."""
+
+    @property
+    def bias(self) -> bool:  # noqa: D102
+        return self._bias
+
+    @property
+    def d_model(self) -> int:  # noqa: D102
+        return self._d_model
+
+    @property
+    def d_state(self) -> int:  # noqa: D102
+        return self._d_state
+
+    @property
+    def n_vocab(self) -> int:  # noqa: D102
+        return self._n_vocab
+
+    @property
+    def dropout(self) -> float:  # noqa: D102
+        return self._dropout
+
+    @property
+    def transposed(self) -> bool:  # noqa: D102
+        return self._transposed
+
+    @property
+    def n_layers(self) -> int:  # noqa: D102
+        return self._n_layers
+
+    @property
+    def prenorm(self) -> bool:  # noqa: D102
+        return self._prenorm
+
+    @property
+    def num_parameters(self) -> int:  # noqa: D102
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
+    def __init__(  # noqa: D107
+        self,
+        d_model: int,
+        dropout: float,
+        n_layers: int,
+        n_vocab: int,
+        bias: bool = True,
+    ):
+        super().__init__()
+        self._d_model = d_model
+        self._dropout = dropout
+        self._n_vocab = n_vocab
+        self._n_layers = n_layers
+        self._bias = bias
+
+        self.embedding = nn.Embedding(n_vocab, d_model)
+
+        self.s4_layers = nn.ModuleList()
+        self.norms = nn.ModuleList()
+        self.dropout_layers = nn.ModuleList()
+
+        for _ in range(n_layers):
+            self.s4_layers.append(
+                S4Block(
+                    d_model=d_model,
+                    dropout=dropout,
+                )
+            )
+            self.norms.append(nn.LayerNorm(d_model))
+            self.dropout_layers.append(nn.Dropout(dropout))
+
+        self.cl_head = nn.Linear(self.d_model, self.n_vocab, self.bias)
+
+    def forward(self, x: Tensor) -> Tensor:  # noqa: D102
+        x = self.embedding(x)  # (B, L, d_input) -> (B, L, d_model)
+        x = x.transpose(-1, -2)  # (B, L, d_model) -> (B, d_model, L)
+
+        for layer, norm, dropout in zip(
+            self.s4d_layers, self.norms, self.dropout_layers
+        ):
+            z = x
+            if self.prenorm:
+                z = norm(z.transpose(-1, -2)).transpose(-1, -2)
+
+            z, _ = layer(z)
+            z = dropout(z)
+            x = x + z
+
+            if not self.prenorm:
+                x = norm(x.transpose(-1, -2)).transpose(-1, -2)
+
+        x = x.transpose(-1, -2)
+        x = self.cl_head(x)
+
+        return x
+
+
+class S4DTokenClassifier(nn.Module):
+    """S4D Token Classifier."""
 
     @property
     def bias(self) -> bool:  # noqa: D102
