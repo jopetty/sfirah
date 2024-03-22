@@ -6,7 +6,21 @@ import unittest
 import torch
 from torch.nn import functional as F  # noqa: N812
 
-from sfirah import transformers
+from sfirah import s4, transformers
+
+
+class TestS4TokenClassifier(unittest.TestCase):  # noqa: D101
+    def test_init(self):  # noqa: D102
+        _ = s4.S4TokenClassifier(
+            d_model=10,
+            d_state=20,
+            n_vocab=30,
+            dropout=0.1,
+            transposed=True,
+            n_layers=2,
+            prenorm=False,
+            lr=0.1,
+        )
 
 
 class TestEncoderTokenClassifer(unittest.TestCase):  # noqa: D101
