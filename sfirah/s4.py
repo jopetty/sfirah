@@ -6,8 +6,6 @@ import logging
 from s4.models.s4.s4d import S4D
 from torch import Tensor, nn
 
-from .layers import IndexPool
-
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     datefmt="%Y-%d-%m %H:%M:%S",
@@ -18,14 +16,6 @@ logger = logging.getLogger(__name__)
 
 class S4TokenClassifier(nn.Module):
     """S4 Token Classifier."""
-
-    @property
-    def cl_dim(self) -> int:  # noqa: D102
-        return self._cl_dim
-
-    @property
-    def cl_index(self) -> int:  # noqa: D102
-        return self._cl_index
 
     @property
     def d_model(self) -> int:  # noqa: D102
@@ -67,8 +57,6 @@ class S4TokenClassifier(nn.Module):
         n_layers: int,
         n_vocab: int,
         lr: float,
-        cl_index: int,
-        cl_dim: int,
         transposed: bool = True,
         prenorm: bool = False,
     ):
@@ -80,8 +68,6 @@ class S4TokenClassifier(nn.Module):
         self._n_layers = n_layers
         self._prenorm = prenorm
         self._transposed = transposed
-        self._cl_dim = cl_dim
-        self._cl_index = cl_index
 
         self.embedding = nn.Embedding(n_vocab, d_model)
 
@@ -96,14 +82,7 @@ class S4TokenClassifier(nn.Module):
             self.norms.append(nn.LayerNorm(d_model))
             self.dropout_layers.append(nn.Dropout(dropout))
 
-        self.cl_head = nn.Sequential(
-            IndexPool(dim=cl_dim, index=cl_index),
-            nn.Linear(
-                self.d_model,
-                self.n_vocab,
-                self.bias,
-            ),
-        )
+        self.cl_head = nn.Linear(self.d_model, self.n_vocab, self.bias)
 
     def forward(self, x: Tensor) -> Tensor:  # noqa: D102
         x = self.embedding(x)  # (B, L, d_input) -> (B, L, d_model)
