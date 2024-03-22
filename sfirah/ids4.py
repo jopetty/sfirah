@@ -86,6 +86,11 @@ class IDS4TokenClassifier(nn.Module):
     def bias(self) -> bool:  # noqa: D102
         return self._bias
 
+    @property
+    def num_parameters(self) -> int:
+        """Return the total number of trainable parameters."""
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
     def __init__(  # noqa: D107
         self,
         d_model: int,
