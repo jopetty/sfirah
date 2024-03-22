@@ -18,6 +18,10 @@ class S4TokenClassifier(nn.Module):
     """S4 Token Classifier."""
 
     @property
+    def bias(self) -> bool:  # noqa: D102
+        return self._bias
+
+    @property
     def d_model(self) -> int:  # noqa: D102
         return self._d_model
 
@@ -59,6 +63,7 @@ class S4TokenClassifier(nn.Module):
         lr: float,
         transposed: bool = True,
         prenorm: bool = False,
+        bias: bool = True,
     ):
         super().__init__()
         self._d_model = d_model
@@ -68,6 +73,7 @@ class S4TokenClassifier(nn.Module):
         self._n_layers = n_layers
         self._prenorm = prenorm
         self._transposed = transposed
+        self._bias = bias
 
         self.embedding = nn.Embedding(n_vocab, d_model)
 
