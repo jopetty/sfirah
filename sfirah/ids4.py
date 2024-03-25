@@ -1,8 +1,11 @@
 """Input-dependent S4 (IDS4)."""
 
+from itertools import accumulate
 
 import torch
+from einops import einsum
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 
 class IDS4Block(nn.Module):
@@ -38,23 +41,38 @@ class IDS4Block(nn.Module):
         Args:
             x: (B, L, d_model)
         """
-        # x = self.norm(x)
-        A_ = x @ self.A  # noqa: N806   (B, L, d_state, d_state)
-        A_ = nn.GELU(A_)  # noqa: N806  (B, L, d_state, d_state)
+        print("")
+        print(f"x.shape: {x.shape}")
+        print(f"A.shape: {self.A.shape}")
+        A_ = einsum(x, self.A, "b l dm, dm ds dst -> b l ds dst")  # noqa: N806
+        A_ = F.gelu(A_)  # noqa: N806  (B, L, d_state, d_state)
 
         # flatten first two dimensions
 
         res = []
 
-        for i in range(A_.shape(0)):
+        for i in range(A_.shape[0]):
             A_i = torch.unbind(A_[i], dim=0)  # noqa: N806 [(d_state, d_state), ...] * L
-            A_i = self.proj(  # noqa: N806
-                torch.linalg.multi_dot(A_i)
-            )  # (d_state, d_state) -> (d_state, 1)
-            res.append(A_i)
+            prod_list = list(
+                accumulate(A_i, lambda x, y: x @ y, initial=torch.eye(self.d_state))
+            )
+            prod_list = [self.proj(p) for p in prod_list]
+
+            # A_i = self.proj(  # noqa: N806
+            #     torch.linalg.multi_dot(A_i)
+            # )  # (d_state, d_state) -> (d_state, 1)
+            A_i = torch.stack(prod_list, dim=0).squeeze()  # noqa: N806 (L, d_state)
+            res.append(A_i[1:, :])
 
         res = torch.stack(res, dim=0).squeeze()  # (B, L, d_state)
-        res = self.C(res) + self.D(x)  # residual
+        res = self.C(res)
+        resid = self.D(x)
+
+        # print shape of res and resid
+        print(f"res.shape: {res.shape}")
+        print(f"resid.shape: {resid.shape}")
+
+        res += self.D(x)  # residual
 
         return res
 
@@ -129,23 +147,22 @@ class IDS4TokenClassifier(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:  # noqa: D102
         x = self.embedding(x)  # (B, L, d_input) -> (B, L, d_model)
-        x = x.transpose(-1, -2)  # (B, L, d_model) -> (B, d_model, L)
+        # x = x.transpose(-1, -2)  # (B, L, d_model) -> (B, d_model, L)
 
         for layer, norm, dropout in zip(
             self.s4_layers, self.norms, self.dropout_layers
         ):
             z = x
             if self.prenorm:
-                z = norm(z.transpose(-1, -2)).transpose(-1, -2)
+                z = norm(z)
 
-            z, _ = layer(z)
+            z = layer(z)
             z = dropout(z)
             x = x + z
 
             if not self.prenorm:
-                x = norm(x.transpose(-1, -2)).transpose(-1, -2)
+                x = norm(x)
 
-        x = x.transpose(-1, -2)
         x = self.cl_head(x)
 
         return x
