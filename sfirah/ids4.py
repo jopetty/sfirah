@@ -46,6 +46,7 @@ class IDS4Block(nn.Module):
         print(f"A.shape: {self.A.shape}")
         A_ = einsum(x, self.A, "b l dm, dm ds dst -> b l ds dst")  # noqa: N806
         A_ = F.gelu(A_)  # noqa: N806  (B, L, d_state, d_state)
+        dev = x.device
 
         # flatten first two dimensions
 
@@ -54,7 +55,9 @@ class IDS4Block(nn.Module):
         for i in range(A_.shape[0]):
             A_i = torch.unbind(A_[i], dim=0)  # noqa: N806 [(d_state, d_state), ...] * L
             prod_list = list(
-                accumulate(A_i, lambda x, y: x @ y, initial=torch.eye(self.d_state))
+                accumulate(
+                    A_i, lambda x, y: x @ y, initial=torch.eye(self.d_state).to(dev)
+                )
             )
             prod_list = [self.proj(p) for p in prod_list]
 
