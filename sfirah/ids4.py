@@ -41,9 +41,6 @@ class IDS4Block(nn.Module):
         Args:
             x: (B, L, d_model)
         """
-        print("")
-        print(f"x.shape: {x.shape}")
-        print(f"A.shape: {self.A.shape}")
         A_ = einsum(x, self.A, "b l dm, dm ds dst -> b l ds dst")  # noqa: N806
         A_ = F.gelu(A_)  # noqa: N806  (B, L, d_state, d_state)
         dev = x.device
@@ -69,12 +66,6 @@ class IDS4Block(nn.Module):
 
         res = torch.stack(res, dim=0).squeeze()  # (B, L, d_state)
         res = self.C(res)
-        resid = self.D(x)
-
-        # print shape of res and resid
-        print(f"res.shape: {res.shape}")
-        print(f"resid.shape: {resid.shape}")
-
         res += self.D(x)  # residual
 
         return res
