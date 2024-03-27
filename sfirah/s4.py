@@ -94,7 +94,7 @@ class S4TokenClassifier(nn.Module):
         x = x.transpose(-1, -2)  # (B, L, d_model) -> (B, d_model, L)
 
         for layer, norm, dropout in zip(
-            self.s4d_layers, self.norms, self.dropout_layers
+            self.s4_layers, self.norms, self.dropout_layers
         ):
             z = x
             if self.prenorm:
