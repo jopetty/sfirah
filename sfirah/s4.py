@@ -61,6 +61,7 @@ class S4TokenClassifier(nn.Module):
         n_layers: int,
         n_vocab: int,
         bias: bool = True,
+        prenorm: bool = True,
     ):
         super().__init__()
         self._d_model = d_model
@@ -68,6 +69,7 @@ class S4TokenClassifier(nn.Module):
         self._n_vocab = n_vocab
         self._n_layers = n_layers
         self._bias = bias
+        self._prenorm = prenorm
 
         self.embedding = nn.Embedding(n_vocab, d_model)
 
