@@ -59,7 +59,7 @@ class SinusoidalPositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-class Transformer(nn.Module):
+class PTTransformer(nn.Module):
     """A Transformer (encoder).
 
     Provides a standard implementation of a transformer. This module is built
@@ -227,7 +227,7 @@ class Transformer(nn.Module):
         return x
 
 
-class EncoderSequenceClassifier(Transformer):
+class PTTransformerSequenceClassifier(PTTransformer):
     """A Transformer encoder with a linear classifier head & sequence pooling.
 
     This is a standard Transformer encoder with a linear classifier head
@@ -299,7 +299,7 @@ class EncoderSequenceClassifier(Transformer):
         return x
 
 
-class EncoderTokenClassifier(Transformer):
+class PTTransformerTokenClassifier(PTTransformer):
     """A Transformer encoder with a linear classifier head.
 
     This is a standard Transformer encoder with a linear classifier head
@@ -453,7 +453,7 @@ class GenerativeDecoder:
         return completions
 
 
-class CausalDecoder(Transformer, GenerativeDecoder):
+class PTTransformerCausalLM(PTTransformer, GenerativeDecoder):
     """A Transformer with a causal-attention mask.
 
     This implements a GPT-style decoder-only model, suitable for autoregressive
@@ -546,6 +546,7 @@ class GPTConfig:
     n_layer: int = 12
     n_head: int = 12
     n_embd: int = 768
+    d_ff: int = 768 * 4
     dropout: float = 0.0
     bias: bool = True  # True: bias in Linears and LayerNorms, like GPT-2.
     # False: a bit better and faster
@@ -647,9 +648,9 @@ class GPTMLP(nn.Module):
 
     def __init__(self, config):  # noqa: D107
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=config.bias)
+        self.c_fc = nn.Linear(config.n_embd, config.d_ff, bias=config.bias)
         self.gelu = nn.GELU()
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=config.bias)
+        self.c_proj = nn.Linear(config.d_ff, config.n_embd, bias=config.bias)
         self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x):  # noqa: D102
@@ -721,6 +722,7 @@ class GPT(nn.Module, GenerativeDecoder):
         bias: bool,
         dropout: float,
         d_model: int,
+        d_ff: int,
         n_vocab: int,
         n_layers: int,
         n_heads: int,
@@ -732,6 +734,7 @@ class GPT(nn.Module, GenerativeDecoder):
             bias (bool): Whether to include bias parameters.
             dropout (float): The dropout probability.
             d_model (int): The model/embedding dimension.
+            d_ff (int): The dimension of the feed-forward layer.
             n_vocab (int): The number of vocabulary items.
             n_layers (int): The number of layers.
             n_heads (int): The number of attention heads.
@@ -747,6 +750,7 @@ class GPT(nn.Module, GenerativeDecoder):
                 "n_layer": n_layers,
                 "n_head": n_heads,
                 "n_embd": d_model,
+                "d_ff": d_ff,
                 "dropout": dropout,
                 "bias": bias,
             }

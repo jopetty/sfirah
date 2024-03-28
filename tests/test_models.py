@@ -35,7 +35,7 @@ class TestS4TokenClassifier(unittest.TestCase):  # noqa: D101
 
 class TestEncoderTokenClassifer(unittest.TestCase):  # noqa: D101
     def test_init(self):  # noqa: D102
-        _ = transformers.EncoderTokenClassifier(
+        _ = transformers.PTTransformerTokenClassifier(
             d_model=10,
             d_ff=20,
             dropout=0.1,
@@ -56,7 +56,7 @@ class TestEncoderTokenClassifer(unittest.TestCase):  # noqa: D101
         seq_len = 4
         n_vocab = 30
 
-        model = transformers.EncoderTokenClassifier(
+        model = transformers.PTTransformerTokenClassifier(
             d_model=10,
             d_ff=20,
             dropout=0.1,
@@ -83,7 +83,7 @@ class TestEncoderTokenClassifer(unittest.TestCase):  # noqa: D101
         seq_len = 4
         n_vocab = 30
 
-        model = transformers.EncoderTokenClassifier(
+        model = transformers.PTTransformerTokenClassifier(
             d_model=10,
             d_ff=20,
             dropout=0.1,
@@ -111,7 +111,7 @@ class TestEncoderTokenClassifer(unittest.TestCase):  # noqa: D101
 
 class TestEncoderSequenceClassifier(unittest.TestCase):  # noqa: D101
     def test_init(self):  # noqa: D102
-        _ = transformers.EncoderSequenceClassifier(
+        _ = transformers.PTTransformerSequenceClassifier(
             cl_dim=1,
             cl_index=0,
             d_model=10,
@@ -134,7 +134,7 @@ class TestEncoderSequenceClassifier(unittest.TestCase):  # noqa: D101
         seq_len = 4
         n_vocab = 30
 
-        model = transformers.EncoderSequenceClassifier(
+        model = transformers.PTTransformerSequenceClassifier(
             cl_dim=1,
             cl_index=0,
             d_model=10,
@@ -165,7 +165,7 @@ class TestEncoderSequenceClassifier(unittest.TestCase):  # noqa: D101
 
 class TestCausalDecoder(unittest.TestCase):  # noqa: D101
     def test_init(self):  # noqa: D102
-        _ = transformers.CausalDecoder(
+        _ = transformers.PTTransformerCausalLM(
             block_size=128,
             d_model=10,
             d_ff=20,
@@ -183,7 +183,7 @@ class TestCausalDecoder(unittest.TestCase):  # noqa: D101
         )
 
     def test_generate(self):  # noqa: D102
-        model = transformers.CausalDecoder(
+        model = transformers.PTTransformerCausalLM(
             block_size=128,
             d_model=10,
             d_ff=20,
