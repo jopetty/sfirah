@@ -50,7 +50,7 @@ class IDS4Block(nn.Module):
             prod_list = list(accumulate(A_i, lambda x, y: x @ y))
             prod_list = [self.proj(p) for p in prod_list]
             A_i = torch.stack(prod_list, dim=0).squeeze()  # noqa: N806 (L, d_state)
-            cum_prod.append(A_i[1:, :])
+            cum_prod.append(A_i)
         cum_prod = torch.stack(cum_prod, dim=0).squeeze()  # (B, L, d_state)
 
         return self.C(cum_prod) + self.D(x)
