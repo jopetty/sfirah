@@ -6,7 +6,22 @@ import unittest
 import torch
 from torch.nn import functional as F  # noqa: N812
 
-from sfirah import s4, transformers
+from sfirah import ids4, s4, transformers
+
+
+class TestIDS4TokenClassifier(unittest.TestCase):  # noqa: D101
+    def test_init(self):  # noqa: D102
+        _ = ids4.IDS4TokenClassifier(
+            d_model=10, n_layers=2, n_vocab=30, dropout=0.1, d_state=5
+        )
+
+    def test_forward(self):  # noqa: D102
+        model = ids4.IDS4TokenClassifier(
+            d_model=20, n_layers=2, n_vocab=30, dropout=0.1, d_state=5
+        )
+
+        x = torch.ones([8, 10], dtype=torch.int64)
+        model(x)
 
 
 class TestS4DTokenClassifier(unittest.TestCase):  # noqa: D101
@@ -214,7 +229,6 @@ class TestGPT(unittest.TestCase):  # noqa: D101
             bias=False,
             block_size=128,
             d_model=10,
-            d_ff=20,
             dropout=0.1,
             n_layers=2,
             n_heads=2,
@@ -226,7 +240,6 @@ class TestGPT(unittest.TestCase):  # noqa: D101
             bias=False,
             block_size=128,
             d_model=10,
-            d_ff=20,
             dropout=0.1,
             n_layers=2,
             n_heads=2,
