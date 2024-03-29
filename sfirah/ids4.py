@@ -41,11 +41,11 @@ class IDS4Block(nn.Module):
         Args:
             x: (B, L, d_model)
         """
-        A_ = einsum(x, self.A, "b l dm, dm ds dst -> b l ds dst")  # noqa: N806
-        A_ = F.gelu(A_)  # noqa: N806  (B, L, d_state, d_state)
+        Ax = einsum(x, self.A, "b l dm, dm ds dst -> b l ds dst")  # noqa: N806
+        Ax = F.gelu(Ax)  # noqa: N806  (B, L, d_state, d_state)
 
-        A_i = torch.unbind(A_, dim=1)  # noqa: N806
-        cum_prod = list(accumulate(A_i, lambda x, y: torch.bmm(x, y)))
+        Ax_i = torch.unbind(Ax, dim=1)  # noqa: N806
+        cum_prod = list(accumulate(Ax_i, lambda x, y: torch.bmm(x, y)))
         cum_prod = [self.proj(p) for p in cum_prod]
         cum_prod = torch.stack(cum_prod, dim=1).squeeze()  # noqa: N806
 
