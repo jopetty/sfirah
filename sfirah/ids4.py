@@ -2,8 +2,9 @@
 
 from itertools import accumulate
 
+import numpy as np
 import torch
-from einops import einsum
+from einops import einsum, repeat
 from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
 
@@ -19,6 +20,13 @@ class IDS4Block(nn.Module):
     def d_model(self) -> int:  # noqa: D102
         return self._d_model
 
+    def make_HiPPO(self, N):  # noqa: N802, N803
+        """Construct HiPPO matrix for initializing self.A."""
+        P = np.sqrt(1 + 2 * np.arange(N))  # noqa: N806
+        A = P[:, np.newaxis] * P[np.newaxis, :]  # noqa: N806
+        A = np.tril(A) - np.diag(np.arange(N))  # noqa: N806
+        return -A
+
     def __init__(  # noqa: D107
         self, d_state: int, d_model: int
     ):
@@ -27,10 +35,13 @@ class IDS4Block(nn.Module):
         self._d_state = d_state
         self._d_model = d_model
 
-        rand_idm = torch.eye(self.d_state).unsqueeze(0) + torch.randn(
-            self.d_model, self.d_state, self.d_state
-        ) / torch.sqrt(torch.tensor(self.d_state))
-        self.A = nn.Parameter(rand_idm)
+        hippo = torch.tensor(self.make_HiPPO(d_state), dtype=torch.float32)
+        self.A = repeat(hippo, "i j -> b i j", b=d_model)
+
+        # rand_idm = torch.eye(self.d_state).unsqueeze(0) + torch.randn(
+        #     self.d_model, self.d_state, self.d_state
+        # ) / torch.sqrt(torch.tensor(self.d_state))
+        # self.A = nn.Parameter(rand_idm)
         self.proj = nn.Linear(self.d_state, 1)
         self.C = nn.Linear(self.d_state, self.d_model)
         self.D = nn.Linear(self.d_model, self.d_model)
