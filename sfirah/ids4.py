@@ -4,7 +4,7 @@ from itertools import accumulate
 
 import numpy as np
 import torch
-from einops import einsum, repeat
+from einops import einsum
 from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
 
@@ -35,13 +35,13 @@ class IDS4Block(nn.Module):
         self._d_state = d_state
         self._d_model = d_model
 
-        hippo = torch.tensor(self.make_HiPPO(d_state), dtype=torch.float32)
-        self.A = repeat(hippo, "i j -> b i j", b=d_model)
+        # hippo = torch.tensor(self.make_HiPPO(d_state), dtype=torch.float32)
+        # self.A = nn.Parameter(repeat(hippo, "i j -> b i j", b=d_model))
 
-        # rand_idm = torch.eye(self.d_state).unsqueeze(0) + torch.randn(
-        #     self.d_model, self.d_state, self.d_state
-        # ) / torch.sqrt(torch.tensor(self.d_state))
-        # self.A = nn.Parameter(rand_idm)
+        rand_idm = torch.eye(self.d_state).unsqueeze(0) + torch.randn(
+            self.d_model, self.d_state, self.d_state
+        ) / torch.sqrt(torch.tensor(self.d_state))
+        self.A = nn.Parameter(rand_idm)
         self.proj = nn.Linear(self.d_state, 1)
         self.C = nn.Linear(self.d_state, self.d_model)
         self.D = nn.Linear(self.d_model, self.d_model)
